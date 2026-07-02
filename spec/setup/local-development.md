@@ -15,8 +15,8 @@ Expected tooling:
 - Node.js
 - npm
 - TypeScript
-- a test runner such as Vitest
-- an HTTP server framework selected during implementation
+- Vitest
+- Fastify (see the [Implementation Design](../implementation-design.md) for the full technology choices)
 
 ## Environment Variables
 

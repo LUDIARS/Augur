@@ -2,6 +2,8 @@
 
 This document defines the order of implementation for Augur and the acceptance bar for each phase. Phases are sequential; a phase starts only when the previous phase's acceptance criteria are met.
 
+Technology choices, module layout, and internal interfaces for these phases are defined in the [Implementation Design](./implementation-design.md).
+
 ## Phase 0 — Project Scaffolding
 
 Scope:

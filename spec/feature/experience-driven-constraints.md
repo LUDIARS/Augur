@@ -38,9 +38,9 @@ The canonical list of qualities — with their default budgets, typical exemptio
 
 Qualities are grouped by domain in the catalog:
 
-- **Common** (any interactive product): `responsiveness`, `smoothness`, `feedback`, `stability_feel`, `consistency`, `startup_readiness`, `progress_transparency`, `recoverability`, `continuity`
-- **Web**: `freshness`, `seamless_navigation`
-- **Game** (including networked play): `control_latency`, `frame_pacing`, `netplay_responsiveness`, `sync_integrity`, `disruption_tolerance`
+- **Common** (any interactive product): `responsiveness`, `smoothness`, `feedback`, `stability_feel`, `consistency`, `startup_readiness`, `progress_transparency`, `recoverability`, `continuity`, `effortlessness`, `accessibility`, `resource_frugality`
+- **Web**: `freshness`, `seamless_navigation`, `cross_browser_consistency`, `shareability`
+- **Game** (including networked play): `control_latency`, `frame_pacing`, `netplay_responsiveness`, `sync_integrity`, `disruption_tolerance`, `matchmaking_flow`, `load_seamlessness`, `audio_visual_sync`, `fairness_feel`, `progression_integrity`
 - **`custom`**: caller-defined; no defaults, explicit targets required.
 
 `ProjectContext.domain` selects which sections contribute default proposals: the common section always applies; the web and game sections apply when the domain matches. A caller may reference any quality explicitly regardless of domain — domain filtering only affects what Augur proposes on its own.

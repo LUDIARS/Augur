@@ -284,7 +284,92 @@ KR-C09a --verified-by--> TP-C09-1
 KR-C09b --verified-by--> TP-C09-2
 ```
 
-In games this goal covers save integrity and resume-from-suspend. Rejoining a live networked match is EG-G05 `disruption_tolerance`.
+In games, resume-from-suspend belongs here; save durability and cloud-sync safety are EG-G10 `progression_integrity`. Rejoining a live networked match is EG-G05 `disruption_tolerance`.
+
+## EG-C10 `effortlessness` — Effortlessness (操作の少なさ)
+
+Feel: "it takes two taps", "no needless questions", "the form fills itself".
+
+**Objective:** core tasks cost the minimum number of decisions and actions.
+
+Key Results:
+
+- KR-C10a: `steps_to_complete` ≤ the agreed budget of discrete user actions per core task.
+- KR-C10b: `redundant_input_count` = 0 — data the product already knows is never asked for twice.
+- KR-C10c: required-field count per form within budget; everything optional is deferred or defaulted.
+
+Typical exemptions: legally mandated confirmations (payment, account deletion), security checkpoints.
+
+Test case patterns:
+
+- **TP-C10-1 Step-count contract** (kind: `e2e`) — Given the core task scripted end to end, when discrete user actions (clicks, taps, keystrokes-as-fields) are counted, then the total must not exceed the budget.
+- **TP-C10-2 Re-entry audit** (kind: `integration`) — Given a returning user who completed the flow before, when they start it again, then previously provided data must be pre-filled.
+
+Relations:
+
+```text
+EG-C10 --realized-by--> KR-C10a, KR-C10b, KR-C10c
+KR-C10a --verified-by--> TP-C10-1
+KR-C10b --verified-by--> TP-C10-2
+EG-C10 --usually-exempts--> mandated confirmations, security checkpoints
+```
+
+## EG-C11 `accessibility` — Accessibility (誰でも使える)
+
+Feel: "works with just a keyboard", "readable without squinting", "the screen reader says something sensible".
+
+**Objective:** the product is usable without a mouse, perfect vision, or ideal conditions.
+
+Key Results:
+
+- KR-C11a: `keyboard_reachability` — every interactive element is reachable and operable by keyboard, with visible focus.
+- KR-C11b: `contrast_violations` = 0 at WCAG AA on key screens.
+- KR-C11c: `unlabeled_control_count` = 0 — every control exposes an accessible name.
+
+Typical exemptions: purely decorative visuals; canvas-rendered game scenes, where the equivalent guarantee is platform accessibility options (remapping, subtitles, colorblind modes).
+
+Test case patterns:
+
+- **TP-C11-1 Keyboard-only traversal** (kind: `e2e`) — Given the core task, when it is driven using only the keyboard, then it must complete, with visible focus at every step.
+- **TP-C11-2 Static accessibility audit** (kind: `integration`) — Given key screens rendered with realistic data, when an accessibility scanner runs, then zero AA violations may remain.
+- **TP-C11-3 Label contract** (kind: `contract`) — Given all interactive controls enumerated, when accessible names are checked, then none may be missing.
+
+Relations:
+
+```text
+EG-C11 --realized-by--> KR-C11a, KR-C11b, KR-C11c
+KR-C11a --verified-by--> TP-C11-1
+KR-C11b --verified-by--> TP-C11-2
+KR-C11c --verified-by--> TP-C11-3
+```
+
+## EG-C12 `resource_frugality` — Resource Frugality (軽さ)
+
+Feel: "doesn't heat my phone", "doesn't eat memory", "the fan stays quiet".
+
+**Objective:** the product respects the user's device.
+
+Key Results:
+
+- KR-C12a: `memory_footprint` within budget at steady state, with no unbounded growth over a long session.
+- KR-C12b: `idle_cpu` ≤ 1% while the user is not interacting.
+- KR-C12c: `energy_impact` within the platform budget for a standard session.
+
+Typical exemptions: explicit heavy modes the user opts into (export, rendering, benchmarking).
+
+Test case patterns:
+
+- **TP-C12-1 Leak soak** (kind: `flaky`) — Given a repeating usage scenario driven N times, when memory is sampled after each cycle, then it must return to the baseline band every time.
+- **TP-C12-2 Idle drain guardrail** (kind: `performance`) — Given the app left idle for T minutes, when CPU usage and wakeups are measured externally, then both must stay within budget.
+
+Relations:
+
+```text
+EG-C12 --realized-by--> KR-C12a, KR-C12b, KR-C12c
+KR-C12a --verified-by--> TP-C12-1
+KR-C12b --verified-by--> TP-C12-2
+EG-C12 --usually-exempts--> opt-in heavy modes
+```
 
 ---
 
@@ -347,6 +432,66 @@ EG-W02 --realized-by--> KR-W02a, KR-W02b, KR-W02c
 KR-W02a --verified-by--> TP-W02-1
 KR-W02b --verified-by--> TP-W02-2
 KR-W02c --verified-by--> TP-W02-3
+```
+
+## EG-W03 `cross_browser_consistency` — Cross-Browser Consistency (どの環境でも同じ)
+
+Feel: "works the same in Safari", "mobile isn't a downgrade", "no 'please use Chrome'".
+
+**Objective:** the experience holds across the supported browser and device matrix.
+
+Key Results:
+
+- KR-W03a: `matrix_pass_rate` = 100% of critical flows on every supported browser/device profile.
+- KR-W03b: `visual_divergence` within tolerance across browsers for key screens.
+- KR-W03c: interaction parity — every pointer interaction has a touch equivalent with the same outcome.
+
+Typical exemptions: browsers below the supported baseline; declared progressive-enhancement gaps.
+
+Test case patterns:
+
+- **TP-W03-1 Matrix flow run** (kind: `e2e`) — Given the critical flows, when they run on each supported browser/device profile, then all must pass on all profiles.
+- **TP-W03-2 Visual regression sweep** (kind: `regression`) — Given key screens captured per browser, when screenshots are diffed against baselines, then divergence must stay within tolerance.
+- **TP-W03-3 Touch parity check** (kind: `e2e`) — Given each pointer interaction, when driven via touch emulation, then the outcome must match the pointer outcome.
+
+Relations:
+
+```text
+EG-W03 --realized-by--> KR-W03a, KR-W03b, KR-W03c
+KR-W03a --verified-by--> TP-W03-1
+KR-W03b --verified-by--> TP-W03-2
+KR-W03c --verified-by--> TP-W03-3
+EG-W03 --usually-exempts--> browsers below the supported baseline
+```
+
+## EG-W04 `shareability` — Shareability (そのまま共有できる)
+
+Feel: "I can just send the link", "the link opens exactly what I was seeing".
+
+**Objective:** what the user sees can be handed to someone else as a URL.
+
+Key Results:
+
+- KR-W04a: `url_state_roundtrip` — visible state (filters, selection, position) is encoded in the URL and restores on open.
+- KR-W04b: `share_preview` — shared links render correct title, description, and image metadata.
+- KR-W04c: opening a shared link without access lands on a useful request path, never a dead end.
+
+Typical exemptions: private or ephemeral views by design (drafts, admin panels, incognito-style modes).
+
+Test case patterns:
+
+- **TP-W04-1 Round-trip test** (kind: `e2e`) — Given manipulated view state, when its URL is opened in a fresh session, then the identical view must render.
+- **TP-W04-2 Preview metadata contract** (kind: `contract`) — Given representative shareable URLs, when share metadata is fetched, then required tags must be present and accurate.
+- **TP-W04-3 No-access landing** (kind: `e2e`) — Given a shared link opened by an unauthorized user, when the page renders, then a request-access path must be shown.
+
+Relations:
+
+```text
+EG-W04 --realized-by--> KR-W04a, KR-W04b, KR-W04c
+KR-W04a --verified-by--> TP-W04-1
+KR-W04b --verified-by--> TP-W04-2
+KR-W04c --verified-by--> TP-W04-3
+EG-W04 --usually-exempts--> drafts, admin panels
 ```
 
 ---
@@ -493,6 +638,151 @@ Relations:
 EG-G05 --realized-by--> KR-G05a, KR-G05b, KR-G05c
 KR-G05a --verified-by--> TP-G05-1
 KR-G05b, KR-G05c --verified-by--> TP-G05-2
+```
+
+## EG-G06 `matchmaking_flow` — Matchmaking Flow (マッチングの快適さ)
+
+Feel: "I get into a match fast", "opponents feel about my level", "a formed match actually starts".
+
+**Objective:** getting into a fair match is fast and predictable.
+
+Key Results:
+
+- KR-G06a: `queue_time` p90 ≤ the regional budget at the reference player population.
+- KR-G06b: `skill_delta` between matched players within the ranked-mode threshold.
+- KR-G06c: `match_abort_rate` ≤ budget — formed matches start instead of dissolving.
+
+Typical exemptions: off-peak hours below the declared reference population; placement matches for new or unranked players.
+
+Test case patterns:
+
+- **TP-G06-1 Simulated-pool matchmaking** (kind: `integration`) — Given a synthetic player population with a realistic skill distribution, when matchmaking runs, then p90 queue time and per-match skill delta must stay within budget.
+- **TP-G06-2 Match formation soak** (kind: `flaky`) — Given N matchmaking cycles driven by headless clients, when results are tallied, then the abort rate must stay within budget.
+
+Relations:
+
+```text
+EG-G06 --realized-by--> KR-G06a, KR-G06b, KR-G06c
+KR-G06a, KR-G06b --verified-by--> TP-G06-1
+KR-G06c --verified-by--> TP-G06-2
+EG-G06 --usually-exempts--> off-peak population, placement matches
+```
+
+Queue-wait display and estimates are EG-C07 `progress_transparency` applied to the matchmaking scope.
+
+## EG-G07 `load_seamlessness` — Load Seamlessness (ロードの隠蔽)
+
+Feel: "the world just continues", "fast travel is fast", "no long black screen mid-game".
+
+**Objective:** in-game transitions never eject the player from the experience.
+
+Key Results:
+
+- KR-G07a: `scene_load` p95 ≤ budget (e.g., 5s) for area transitions and fast travel.
+- KR-G07b: `input_lockout` ≤ budget during masked transitions — the game acknowledges input even while loading.
+- KR-G07c: `visible_pop_in` within the declared tolerance during in-world streaming.
+
+Typical exemptions: initial boot and first area load (EG-C06), platform-mandated screens.
+
+Test case patterns:
+
+- **TP-G07-1 Transition timing sweep** (kind: `performance`) — Given every major transition scripted (area changes, fast travel, respawn), when load times are measured externally, then p95 must stay within budget.
+- **TP-G07-2 Masked-transition input check** (kind: `e2e`) — Given inputs sent during a masked transition, when the transition completes, then each input must have been acknowledged within the lockout budget.
+
+Relations:
+
+```text
+EG-G07 --realized-by--> KR-G07a, KR-G07b, KR-G07c
+KR-G07a --verified-by--> TP-G07-1
+KR-G07b --verified-by--> TP-G07-2
+EG-G07 --usually-exempts--> initial boot (EG-C06), platform-mandated screens
+```
+
+## EG-G08 `audio_visual_sync` — Audio-Visual Sync (音と映像のズレのなさ)
+
+Feel: "hits sound when they land", "no lip-sync drift", "the beat matches my button press".
+
+**Objective:** what the player hears matches what they see, frame-close.
+
+Key Results:
+
+- KR-G08a: `av_offset` ≤ 45ms between a visual event and its sound.
+- KR-G08b: `audio_dropout_count` = 0 during representative gameplay.
+- KR-G08c: in rhythm or timing-critical modes, input-to-audio feedback fits the mode's declared judgment window.
+
+Typical exemptions: intentionally delayed audio (distance attenuation, echo) declared by design.
+
+Test case patterns:
+
+- **TP-G08-1 Event-sync capture** (kind: `integration`) — Given an instrumented build emitting timestamps for impact frames and sound onsets, when N scripted events fire, then every offset must stay within budget.
+- **TP-G08-2 Dropout soak** (kind: `flaky`) — Given full-session audio captured during scripted gameplay, when analyzed, then zero dropouts or glitches may appear.
+
+Relations:
+
+```text
+EG-G08 --realized-by--> KR-G08a, KR-G08b, KR-G08c
+KR-G08a --verified-by--> TP-G08-1
+KR-G08b --verified-by--> TP-G08-2
+EG-G08 --usually-exempts--> designed audio delay (distance, echo)
+```
+
+## EG-G09 `fairness_feel` — Fairness Feel (公平感)
+
+Feel: "I died because I was outplayed, not because of the network", "no peeker's advantage", "hits count the same for everyone".
+
+**Objective:** network conditions and implementation details never grant one player an unearned edge.
+
+Key Results:
+
+- KR-G09a: `hit_registration_agreement` ≥ threshold — client-perceived hits are confirmed by the server within tolerance, symmetrically for both players.
+- KR-G09b: `peeker_advantage` ≤ the budgeted milliseconds at the supported RTT asymmetry.
+- KR-G09c: `authority_validation` — every gameplay-critical action is validated server-side; client-only trust count = 0.
+
+Typical exemptions: casual or custom modes with declared relaxed rules.
+
+Test case patterns:
+
+- **TP-G09-1 Asymmetric-RTT duel** (kind: `integration`) — Given two scripted clients under asymmetric emulated latency, when standard duels run in both directions, then hit agreement and peeker advantage must stay within budget for both sides.
+- **TP-G09-2 Authority contract** (kind: `contract`) — Given all gameplay-critical actions enumerated, when server handling is checked, then each must have server-side validation.
+- **TP-G09-3 Out-of-envelope rejection** (kind: `security`) — Given a modified client submitting impossible movement or actions, when the server processes them, then it must reject them and keep shared state consistent.
+
+Relations:
+
+```text
+EG-G09 --realized-by--> KR-G09a, KR-G09b, KR-G09c
+KR-G09a, KR-G09b --verified-by--> TP-G09-1
+KR-G09c --verified-by--> TP-G09-2, TP-G09-3
+EG-G09 --usually-exempts--> casual/custom modes with declared rules
+```
+
+## EG-G10 `progression_integrity` — Progression Integrity (進行データの安全)
+
+Feel: "my save is sacred", "a crash costs me minutes, not hours", "cloud sync never eats progress".
+
+**Objective:** player progress survives crashes, power loss, and sync conflicts.
+
+Key Results:
+
+- KR-G10a: `save_atomicity` — interrupting a save never corrupts it; the last good save always loads.
+- KR-G10b: `progress_loss_window` ≤ the declared autosave interval after any crash.
+- KR-G10c: `sync_conflict_resolution` — cloud conflicts resolve by the declared policy, never silently discarding newer meaningful progress.
+
+Typical exemptions: hardcore or permadeath modes where loss is the declared design.
+
+Test case patterns:
+
+- **TP-G10-1 Kill-during-save** (kind: `integration`) — Given the process terminated mid-save repeatedly at randomized offsets, when the game relaunches, then a valid save must load every time.
+- **TP-G10-2 Crash loss bound** (kind: `e2e`) — Given scripted play followed by a forced crash, when the game relaunches, then lost progress must fit within the autosave window.
+- **TP-G10-3 Conflict matrix** (kind: `integration`) — Given constructed divergent local and cloud saves for each conflict class, when sync runs, then resolution must follow the declared policy in every case.
+
+Relations:
+
+```text
+EG-G10 --realized-by--> KR-G10a, KR-G10b, KR-G10c
+KR-G10a --verified-by--> TP-G10-1
+KR-G10b --verified-by--> TP-G10-2
+KR-G10c --verified-by--> TP-G10-3
+EG-G10 --usually-exempts--> hardcore/permadeath modes
 ```
 
 ---

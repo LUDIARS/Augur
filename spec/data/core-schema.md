@@ -47,24 +47,34 @@ Experience goals express how the product should feel, and how that feel becomes 
 type ExperienceGoal = {
   quality:
     // Common (any interactive product)
-    | "responsiveness"          // EG-C01
-    | "smoothness"              // EG-C02
-    | "feedback"                // EG-C03
-    | "stability_feel"          // EG-C04
-    | "consistency"             // EG-C05
-    | "startup_readiness"       // EG-C06
-    | "progress_transparency"   // EG-C07
-    | "recoverability"          // EG-C08
-    | "continuity"              // EG-C09
+    | "responsiveness"            // EG-C01
+    | "smoothness"                // EG-C02
+    | "feedback"                  // EG-C03
+    | "stability_feel"            // EG-C04
+    | "consistency"               // EG-C05
+    | "startup_readiness"         // EG-C06
+    | "progress_transparency"     // EG-C07
+    | "recoverability"            // EG-C08
+    | "continuity"                // EG-C09
+    | "effortlessness"            // EG-C10
+    | "accessibility"             // EG-C11
+    | "resource_frugality"        // EG-C12
     // Web
-    | "freshness"               // EG-W01
-    | "seamless_navigation"     // EG-W02
+    | "freshness"                 // EG-W01
+    | "seamless_navigation"       // EG-W02
+    | "cross_browser_consistency" // EG-W03
+    | "shareability"              // EG-W04
     // Game (including networked play)
-    | "control_latency"         // EG-G01
-    | "frame_pacing"            // EG-G02
-    | "netplay_responsiveness"  // EG-G03
-    | "sync_integrity"          // EG-G04
-    | "disruption_tolerance"    // EG-G05
+    | "control_latency"           // EG-G01
+    | "frame_pacing"              // EG-G02
+    | "netplay_responsiveness"    // EG-G03
+    | "sync_integrity"            // EG-G04
+    | "disruption_tolerance"      // EG-G05
+    | "matchmaking_flow"          // EG-G06
+    | "load_seamlessness"         // EG-G07
+    | "audio_visual_sync"         // EG-G08
+    | "fairness_feel"             // EG-G09
+    | "progression_integrity"     // EG-G10
     | "custom";
   description?: string;
   targets?: ExperienceTarget[];      // explicit budgets; when absent, Augur proposes defaults
