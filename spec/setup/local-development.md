@@ -26,8 +26,10 @@ Future optional variables may include:
 
 - `AUGUR_PORT`
 - `AUGUR_LOG_LEVEL`
-- `AUGUR_LLM_PROVIDER`
-- `AUGUR_LLM_API_KEY`
+- `AUGUR_LLM_PROVIDER` (Phase 4 only, see [roadmap](../roadmap.md))
+- `AUGUR_LLM_API_KEY` (Phase 4 only)
+
+The MVP planning engine is deterministic and requires no API keys. See the [Planning Engine](../feature/planning-engine.md) spec.
 
 ## Local Commands
 

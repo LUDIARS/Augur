@@ -35,6 +35,7 @@ so that I can choose a safe implementation direction before editing code.
 - `regression`: prefer `minimal` or `test_first` depending on blast radius.
 - `refactor`: prefer `behavior_preserving`.
 - `performance`: prefer `investigate_first` unless a clear bottleneck is supplied.
+- `stability`: prefer `investigate_first` until a deterministic reproduction exists, then `minimal`.
 - `security`: prefer `contract_first` and explicit validation boundaries.
 - `unknown`: prefer `investigate_first`.
 
@@ -45,7 +46,7 @@ The feature returns a `FixPolicy`.
 The policy must include:
 
 - selected strategy
-- ordered steps
+- ordered steps, each referencing supporting evidence
 - risks
 - rollback guidance when useful
 
@@ -58,6 +59,7 @@ The policy must include:
 ## Related Specs
 
 - [Core Data Schema](../data/core-schema.md)
+- [Planning Engine](./planning-engine.md)
 - [HTTP API](../interface/http-api.md)
 - [Service Test Strategy](../test/service-test-strategy.md)
 

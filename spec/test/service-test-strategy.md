@@ -25,8 +25,8 @@ Purpose:
 
 - Validate objective classification.
 - Validate signal normalization.
-- Validate omen extraction.
-- Validate priority selection.
+- Validate evidence extraction.
+- Validate priority and confidence scoring.
 - Validate fix policy strategy selection.
 
 Execution:
@@ -64,6 +64,11 @@ Examples:
 - regression objective with failure log
 - refactor objective with changed files
 - performance objective with runtime signal
+- stability objective with intermittent failure log
+- security objective with changed files
+- unknown objective with minimal input
+
+Golden tests must run with LLM enrichment disabled so that output is fully deterministic. See the [Planning Engine](../feature/planning-engine.md) spec.
 
 ### Safety Tests
 
@@ -104,6 +109,18 @@ Then they must reference evidence.
 Given only an objective and changed files,
 When Augur creates a plan,
 Then it should return partial guidance instead of failing solely due to missing diff or logs.
+
+### ST-006 Stability Investigates Before Fixing
+
+Given a stability objective without a deterministic reproduction,
+When Augur creates a plan,
+Then the test plan should include flaky-behavior checks and the fix policy should prefer `investigate_first`.
+
+### ST-007 Identical Input Produces Identical Output
+
+Given the same request submitted twice with LLM enrichment disabled,
+When Augur creates both plans,
+Then the two responses must be byte-identical.
 
 ## CI Handling
 

@@ -77,14 +77,16 @@ Example:
         "id": "fix-001",
         "title": "Add failing regression coverage",
         "description": "Add a test that reproduces stale results after clearing the query.",
-        "targetFiles": ["src/search.test.ts"]
+        "targetFiles": ["src/search.test.ts"],
+        "evidenceIds": ["ev-001"]
       },
       {
         "id": "fix-002",
         "title": "Reset result state for empty query",
         "description": "Apply the smallest code change that clears cached results when query input is blank.",
         "targetFiles": ["src/search.ts"],
-        "dependsOn": ["fix-001"]
+        "dependsOn": ["fix-001"],
+        "evidenceIds": ["ev-001", "ev-002"]
       }
     ],
     "risks": [
@@ -101,6 +103,11 @@ Example:
       "id": "ev-001",
       "type": "objective",
       "detail": "Caller requested a bug fix for stale search results after clearing the query."
+    },
+    {
+      "id": "ev-002",
+      "type": "failure_log",
+      "detail": "npm run test exited with code 1: expected [] to equal [...]"
     }
   ]
 }

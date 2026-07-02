@@ -49,7 +49,7 @@ Each suggestion must include:
 
 - test kind
 - priority
-- confidence
+- confidence (`0.0` to `1.0`, defined in the [Core Data Schema](../data/core-schema.md))
 - target files when known
 - rationale
 - evidence references
@@ -64,6 +64,7 @@ Each suggestion must include:
 ## Related Specs
 
 - [Core Data Schema](../data/core-schema.md)
+- [Planning Engine](./planning-engine.md)
 - [HTTP API](../interface/http-api.md)
 - [Service Test Strategy](../test/service-test-strategy.md)
 

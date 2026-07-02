@@ -108,15 +108,28 @@ type TestSuggestion = {
     | "e2e"
     | "performance"
     | "regression"
+    | "security"
     | "flaky";
   priority: "critical" | "high" | "medium" | "low";
-  confidence: number;
+  confidence: number; // 0.0 to 1.0, see "Confidence" below
   targetFiles?: string[];
   rationale: string;
   draft: TestDraft;
   evidenceIds: string[];
 };
 ```
+
+### Confidence
+
+`confidence` expresses how strongly the available evidence supports a suggestion. It is a number between `0.0` and `1.0` inclusive.
+
+Interpretation bands:
+
+- `0.8` – `1.0`: directly supported by explicit evidence such as a failure log or diff that matches the objective.
+- `0.5` – `0.79`: supported by partial or indirect evidence.
+- `0.0` – `0.49`: speculative; derived mainly from the objective description with little corroborating signal.
+
+How confidence is computed is defined in the [Planning Engine](../feature/planning-engine.md) spec.
 
 ## FixPolicy
 
@@ -134,6 +147,7 @@ type FixStep = {
   description: string;
   targetFiles?: string[];
   dependsOn?: string[];
+  evidenceIds: string[];
 };
 ```
 

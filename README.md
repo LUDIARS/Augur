@@ -11,3 +11,5 @@ Specifications are managed under [spec/](./spec/) using the AIFormat category fo
 - `interface/`
 - `setup/`
 - `test/`
+
+The implementation order and acceptance bar for each phase are defined in [spec/roadmap.md](./spec/roadmap.md).
