@@ -16,4 +16,4 @@ Specifications are managed under [spec/](./spec/) using the AIFormat category fo
 - `setup/`
 - `test/`
 
-The implementation order and acceptance bar for each phase are defined in [spec/roadmap.md](./spec/roadmap.md). Technology choices, module layout, and internal interfaces are defined in [spec/implementation-design.md](./spec/implementation-design.md).
+The implementation order and acceptance bar for each phase are defined in [spec/roadmap.md](./spec/roadmap.md). Technology choices, module layout, and internal interfaces are defined in [spec/implementation-design.md](./spec/implementation-design.md). The implementation handoff for the external media capture/analysis tool is [spec/media-tool-implementation.md](./spec/media-tool-implementation.md).

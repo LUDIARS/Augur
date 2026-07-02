@@ -76,3 +76,4 @@ Golden-image testing fails in practice when baselines churn. The catalog pattern
 - [Core Data Schema](../data/core-schema.md) — `RuntimeSignal.type: "media_analysis"`
 - [Experience-Driven Constraints](./experience-driven-constraints.md) — budget resolution, exemptions, violation semantics
 - [Planning Engine](./planning-engine.md) — the pipeline that consumes the signals
+- [Media Tool Implementation Guide](../media-tool-implementation.md) — the implementation handoff for the external capture/analysis tool (augur-lens)
