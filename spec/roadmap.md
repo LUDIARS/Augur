@@ -4,7 +4,7 @@ This document defines the order of implementation for Augur and the acceptance b
 
 Technology choices, module layout, and internal interfaces for these phases are defined in the [Implementation Design](./implementation-design.md).
 
-Status: Phases 0–2 are implemented; Phases 3–5 are not started.
+Status: design is complete for all phases. Phases 0–2 are implemented; Phases 3–5 are designed ([CLI](./interface/cli.md), [LLM Assistance](./feature/llm-assistance.md), [Plan Persistence](./data/persistence.md)) and not yet implemented.
 
 ## Phase 0 — Project Scaffolding
 
@@ -49,21 +49,25 @@ Acceptance:
 
 ## Phase 3 — CLI Interface
 
+Design: [CLI](./interface/cli.md).
+
 Scope:
 
-- An `augur plan` command that gathers local signals (git diff, changed files, optional log/coverage files) and prints a plan, reusing the Phase 1 engine directly.
+- An `augur plan` command that gathers local signals (git diff, changed files, optional log/coverage/analyzer files) and prints a plan, reusing the Phase 1 engine directly.
 - Output formats: human-readable text and `--json` for agents.
 
 Acceptance:
 
-- A new `spec/interface/cli.md` is written before implementation starts.
-- The CLI produces the same plan as the HTTP API for the same input.
+- The CLI implements the flag surface, exit codes, and gathering behavior in the CLI spec.
+- The CLI produces the same plan as the HTTP API for the same input (parity test).
 
 ## Phase 4 — LLM Assistance
 
+Design: [LLM Assistance](./feature/llm-assistance.md).
+
 Scope:
 
-- The optional prose enrichment stage defined in the [Planning Engine](./feature/planning-engine.md) spec.
+- The optional prose enrichment stage defined in the [Planning Engine](./feature/planning-engine.md) spec, with the runtime structural guard.
 - LLM exemption proposals: semantic judgment of which scopes a UX budget should not strictly cover (for example, login and registration flows), emitted as labeled `ExperienceExemption` proposals.
 - Provider abstraction behind `AUGUR_LLM_PROVIDER` / `AUGUR_LLM_API_KEY`.
 
@@ -75,15 +79,17 @@ Acceptance:
 
 ## Phase 5 — Persistence and History
 
+Design: [Plan Persistence](./data/persistence.md). The [Core Data Schema](./data/core-schema.md) already carries the backward-compatible `planId`/`createdAt` additions.
+
 Scope:
 
-- Optional storage of issued plans (`planId`, `createdAt` added to `PlanResponse` as optional fields).
-- `GET /v1/plans/{id}` for retrieval.
+- Optional storage of issued plans behind the `PlanStore` interface (SQLite file store, in-memory store for tests), off by default.
+- `GET /v1/plans/{planId}` and `DELETE /v1/plans/{planId}`, with retention sweep.
 
 Acceptance:
 
-- Schema additions are backward compatible: existing clients ignore the new optional fields.
-- The [Core Data Schema](./data/core-schema.md) is updated before implementation starts.
+- With persistence disabled, responses are byte-identical to Phase 2 output.
+- Store contract tests pass against both store implementations; delete-then-get returns `404`.
 
 ## Non-Goals
 

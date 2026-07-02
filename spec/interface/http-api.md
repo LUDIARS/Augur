@@ -150,6 +150,33 @@ Request fragment:
 
 The resulting plan contains a `critical` guardrail for `/search` (explicit 20ms budget, already violated at 42ms) carrying the budget in the suggestion's `budget` field, and a lower-priority guardrail for auth flows against the relaxed 3s budget. The `/login` measurement is not flagged as a violation because it falls inside the exempted scope and under the relaxed budget.
 
+## Retrieve a Stored Plan (Phase 5)
+
+Available only when persistence is enabled; semantics in [Plan Persistence](../data/persistence.md).
+
+```http
+GET /v1/plans/{planId}
+```
+
+Response: the stored `PlanResponse` with `planId` and `createdAt` stamped. Unknown ids — and any id while persistence is disabled — return `404`:
+
+```json
+{
+  "error": {
+    "code": "not_found",
+    "message": "No plan with id plan_01J..."
+  }
+}
+```
+
+## Delete a Stored Plan (Phase 5)
+
+```http
+DELETE /v1/plans/{planId}
+```
+
+Returns `204` with no body on success, `404` with the envelope above when unknown. Stored plans contain the caller's request signals (diffs, logs), so deletion is caller-controlled and permanent.
+
 ## Health Check
 
 ```http

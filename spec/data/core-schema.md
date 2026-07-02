@@ -1,8 +1,8 @@
 # Core Data Schema
 
-Augur does not require a database for the MVP.
+Augur does not require a database for the MVP; optional storage is defined in [Plan Persistence](./persistence.md).
 
-This document defines the durable data shapes exchanged through APIs, CLIs, reports, and future storage. If persistence is added later, these schemas should be treated as the source of truth for stored records.
+This document defines the durable data shapes exchanged through APIs, CLIs, reports, and storage. These schemas are the source of truth for stored records.
 
 ## CreatePlanRequest
 
@@ -146,19 +146,20 @@ type RuntimeSignal = {
 
 `media_analysis` carries numeric results derived from captured screenshots or video by an external analyzer — for example a golden-image diff percentage or a count of frames flagged against a content rating tier. `name` holds the metric (matching the `ExperienceTarget.metric` it should be compared against), `scope` names the scene or segment the capture covers, and `source` identifies the capture harness and analyzer. The capture/analysis contract is defined in [Media-Based Testing](../feature/media-based-testing.md).
 
-```ts
-```
-
 ## PlanResponse
 
 ```ts
 type PlanResponse = {
+  planId?: string;    // present only when the plan was persisted (Phase 5)
+  createdAt?: string; // ISO 8601 UTC; present only when the plan was persisted
   summary: string;
   testPlan: TestPlan;
   fixPolicy: FixPolicy;
   evidence: Evidence[];
 };
 ```
+
+`planId` and `createdAt` are stamped by the HTTP layer after the engine returns, never by the engine itself; see [Plan Persistence](./persistence.md). With persistence disabled they are absent and the response is identical to the stateless behavior.
 
 ## TestPlan
 
