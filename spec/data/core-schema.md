@@ -41,16 +41,21 @@ type Objective = {
 
 ## Experience Goals
 
-Experience goals express how the product should feel, and how that feel becomes measurable budgets. Semantics are defined in [Experience-Driven Constraints](../feature/experience-driven-constraints.md).
+Experience goals express how the product should feel, and how that feel becomes measurable budgets. Semantics are defined in [Experience-Driven Constraints](../feature/experience-driven-constraints.md). Each quality's default budgets and test case patterns are cataloged in the [Experience Goal Catalog](./experience-goal-catalog.md).
 
 ```ts
 type ExperienceGoal = {
   quality:
-    | "responsiveness"
-    | "smoothness"
-    | "feedback"
-    | "stability_feel"
-    | "consistency"
+    | "responsiveness"        // EG-01
+    | "smoothness"            // EG-02
+    | "feedback"              // EG-03
+    | "stability_feel"        // EG-04
+    | "consistency"           // EG-05
+    | "startup_readiness"     // EG-06
+    | "progress_transparency" // EG-07
+    | "recoverability"        // EG-08
+    | "continuity"            // EG-09
+    | "freshness"             // EG-10
     | "custom";
   description?: string;
   targets?: ExperienceTarget[];      // explicit budgets; when absent, Augur proposes defaults

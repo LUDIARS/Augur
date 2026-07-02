@@ -34,7 +34,9 @@ All three types are defined in the [Core Data Schema](../data/core-schema.md).
 
 ## Quality-to-Metric Mapping
 
-When a goal has no explicit targets, Augur proposes default budgets from this table. Defaults draw on established perception thresholds (about 100ms feels instantaneous, about 1s keeps flow, 16.7ms per frame sustains 60fps motion).
+The canonical list of qualities — with their default budgets, typical exemptions, and test case patterns — lives in the [Experience Goal Catalog](../data/experience-goal-catalog.md). When a goal has no explicit targets, Augur proposes default budgets from that catalog. Defaults draw on established perception thresholds (about 100ms feels instantaneous, about 1s keeps flow, 16.7ms per frame sustains 60fps motion).
+
+The core qualities, summarized:
 
 | Quality | Default metrics | Default budget |
 | --- | --- | --- |
@@ -43,6 +45,11 @@ When a goal has no explicit targets, Augur proposes default budgets from this ta
 | `feedback` | `time_to_feedback` | visible acknowledgement ≤ 100ms after input |
 | `stability_feel` | `error_rate`, `crash_count` | zero crashes; error rate below the caller's stated tolerance |
 | `consistency` | latency spread (`p99 / p50`) | p99 within 3× of p50 for the same interaction |
+| `startup_readiness` | `time_to_interactive`, `first_meaningful_content` | interactive ≤ 2000ms cold; content ≤ 1000ms |
+| `progress_transparency` | `time_to_progress_indicator`, `silent_timeout_count` | progress shown ≤ 500ms for operations over 1s; zero silent timeouts |
+| `recoverability` | `input_loss_on_error`, `unguarded_destructive_actions` | zero input loss on failed submit; zero unguarded destructive actions |
+| `continuity` | `state_loss_on_reload` | zero loss of in-progress work across reload or reconnect |
+| `freshness` | `staleness_after_mutation` | own changes visible ≤ 1000ms; no residual results after reset |
 | `custom` | caller-defined | no default; explicit targets required |
 
 Rules:
@@ -104,6 +111,7 @@ With LLM assistance enabled and no caller exemption, Augur could propose the aut
 ## Related Specs
 
 - [Core Data Schema](../data/core-schema.md)
+- [Experience Goal Catalog](../data/experience-goal-catalog.md)
 - [Planning Engine](./planning-engine.md)
 - [Purpose-Driven Test Plan](./purpose-driven-test-plan.md)
 - [Purpose-Driven Fix Policy](./purpose-driven-fix-policy.md)
