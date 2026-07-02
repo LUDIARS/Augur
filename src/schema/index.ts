@@ -50,7 +50,7 @@ export const coverageSignalSchema = z.object({
 });
 
 export const runtimeSignalSchema = z.object({
-  type: z.enum(['web_response', 'api_latency', 'memory', 'cpu', 'custom']),
+  type: z.enum(['web_response', 'api_latency', 'memory', 'cpu', 'media_analysis', 'custom']),
   name: z.string(),
   value: z.number(),
   unit: z.string(),
@@ -89,6 +89,8 @@ export const experienceQualitySchema = z.enum([
   'audio_visual_sync', // EG-G08
   'fairness_feel', // EG-G09
   'progression_integrity', // EG-G10
+  'visual_fidelity', // EG-G11
+  'content_rating_compliance', // EG-G12
   'custom',
 ]);
 

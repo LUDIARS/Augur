@@ -498,7 +498,7 @@ EG-W04 --usually-exempts--> drafts, admin panels
 
 # Game Goals
 
-Game goals cover both local play and networked play. Measurements come from external harnesses — instrumented builds, input replay, headless clients, and network emulation (latency, jitter, packet loss injection) — run by external runners. Augur only plans against their outputs.
+Game goals cover both local play and networked play. Measurements come from external harnesses — instrumented builds, input replay, headless clients, network emulation (latency, jitter, packet loss injection), and screenshot/video capture with frame analysis — run by external runners. Augur only plans against their outputs.
 
 Common goals still apply to games with game scopes: boot-to-title is EG-C06, matchmaking wait display is EG-C07, save integrity is EG-C09.
 
@@ -783,6 +783,70 @@ KR-G10a --verified-by--> TP-G10-1
 KR-G10b --verified-by--> TP-G10-2
 KR-G10c --verified-by--> TP-G10-3
 EG-G10 --usually-exempts--> hardcore/permadeath modes
+```
+
+## EG-G11 `visual_fidelity` — Visual Fidelity (描画の正しさ)
+
+Feel: "the game looks the way it should", "no missing textures, no flicker", "the HUD reads clearly on every screen".
+
+**Objective:** rendered output stays visually correct across changes, verified from captured frames rather than eyeballs.
+
+Measurements come from an external capture harness (scripted screenshot and video capture) and frame analyzers (perceptual diff, artifact detectors, OCR), per [Media-Based Testing](../feature/media-based-testing.md). Augur only plans against their numeric outputs.
+
+Key Results:
+
+- KR-G11a: `golden_image_diff` ≤ 2% perceptual difference against approved reference captures, per curated shot.
+- KR-G11b: `render_artifact_count` = 0 — placeholder textures, z-fighting flicker, NaN-colored pixels, or full-screen corruption in captured segments.
+- KR-G11c: `hud_legibility_failures` = 0 — declared HUD and subtitle elements present and legible at every supported resolution and aspect ratio.
+
+Typical exemptions: photo mode with user-applied filters, declared stochastic VFX regions (particles, procedural weather), loading screens.
+
+Test case patterns:
+
+- **TP-G11-1 Golden-image sweep** (kind: `regression`) — Given a scripted camera tour re-rendered on the candidate build, when each capture is compared perceptually against its approved golden reference, then no shot may diff beyond the budget without an explicit baseline update.
+- **TP-G11-2 Artifact detector pass** (kind: `integration`) — Given video recorded from scripted gameplay segments, when every frame runs through the artifact detectors (placeholder-texture palette, flicker, NaN-color), then zero artifacts may be reported.
+- **TP-G11-3 HUD legibility scan** (kind: `e2e`) — Given screenshots captured at each supported resolution and aspect ratio, when declared HUD elements are located and text is OCR-verified, then every element must be present and legible.
+
+Relations:
+
+```text
+EG-G11 --realized-by--> KR-G11a, KR-G11b, KR-G11c
+KR-G11a --verified-by--> TP-G11-1
+KR-G11b --verified-by--> TP-G11-2
+KR-G11c --verified-by--> TP-G11-3
+EG-G11 --usually-exempts--> photo mode, stochastic VFX, loading screens
+```
+
+## EG-G12 `content_rating_compliance` — Content Rating Compliance (レーティング適合)
+
+Feel: "the game never shows more than its rating promised", "violence, blood, and gore stay within the declared tier", "the CERO B version never renders CERO D content".
+
+**Objective:** captured frames never exceed the declared content rating tier (CERO, ESRB, PEGI, IARC) for any descriptor.
+
+The declared rating tier and its descriptor limits (violence, blood amount and color, dismemberment, sexual content, language) are configured in the external frame classifier, not in Augur; the caller states the target tier (e.g. "CERO B") in the goal description. Classification counts arrive as `media_analysis` signals per [Media-Based Testing](../feature/media-based-testing.md). Automated classification is a pre-submission guardrail — the rating body's own review remains the final authority, so flagged frames are confirmed by human review before counting as violations.
+
+Key Results:
+
+- KR-G12a: `rating_violation_count` = 0 — frames classified above the declared tier for any descriptor, confirmed by human review.
+- KR-G12b: `prohibited_expression_count` = 0 — expressions the rating body bans outright at every tier (e.g. CERO prohibited-expression clauses).
+- KR-G12c: `regional_variant_mismatch_count` = 0 — regional SKU expression settings (blood color, gore toggle) visibly applied in captured output.
+
+Typical exemptions: internal debug builds never shipped, platform-managed overlays outside the rendered output.
+
+Test case patterns:
+
+- **TP-G12-1 Rated-content frame audit** (kind: `e2e`) — Given video captured from scripted playthrough segments covering every rating-relevant scene, when each frame is classified against the declared descriptor limits, then zero frames may exceed the declared rating tier.
+- **TP-G12-2 Flagged-scene rating regression** (kind: `regression`) — Given the corpus of previously flagged scenes, when each scene is re-captured and re-classified after a content change, then no classification may exceed its accepted baseline.
+- **TP-G12-3 Regional variant capture check** (kind: `integration`) — Given each regional build variant, when identical scenes are captured on every variant, then each variant-specific expression setting must be visibly applied in its output.
+
+Relations:
+
+```text
+EG-G12 --realized-by--> KR-G12a, KR-G12b, KR-G12c
+KR-G12a --verified-by--> TP-G12-1, TP-G12-2
+KR-G12b --verified-by--> TP-G12-1
+KR-G12c --verified-by--> TP-G12-3
+EG-G12 --usually-exempts--> internal debug builds, platform overlays
 ```
 
 ---
