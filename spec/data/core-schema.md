@@ -46,16 +46,25 @@ Experience goals express how the product should feel, and how that feel becomes 
 ```ts
 type ExperienceGoal = {
   quality:
-    | "responsiveness"        // EG-01
-    | "smoothness"            // EG-02
-    | "feedback"              // EG-03
-    | "stability_feel"        // EG-04
-    | "consistency"           // EG-05
-    | "startup_readiness"     // EG-06
-    | "progress_transparency" // EG-07
-    | "recoverability"        // EG-08
-    | "continuity"            // EG-09
-    | "freshness"             // EG-10
+    // Common (any interactive product)
+    | "responsiveness"          // EG-C01
+    | "smoothness"              // EG-C02
+    | "feedback"                // EG-C03
+    | "stability_feel"          // EG-C04
+    | "consistency"             // EG-C05
+    | "startup_readiness"       // EG-C06
+    | "progress_transparency"   // EG-C07
+    | "recoverability"          // EG-C08
+    | "continuity"              // EG-C09
+    // Web
+    | "freshness"               // EG-W01
+    | "seamless_navigation"     // EG-W02
+    // Game (including networked play)
+    | "control_latency"         // EG-G01
+    | "frame_pacing"            // EG-G02
+    | "netplay_responsiveness"  // EG-G03
+    | "sync_integrity"          // EG-G04
+    | "disruption_tolerance"    // EG-G05
     | "custom";
   description?: string;
   targets?: ExperienceTarget[];      // explicit budgets; when absent, Augur proposes defaults
@@ -83,6 +92,7 @@ type ExperienceExemption = {
 ```ts
 type ProjectContext = {
   name?: string;
+  domain?: "web" | "game" | "service" | "other"; // selects which catalog sections contribute default proposals
   language?: string;
   frameworks?: string[];
   testRunners?: string[];

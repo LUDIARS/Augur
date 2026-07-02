@@ -28,7 +28,7 @@ Acceptance:
 
 - Unit tests for normalization, evidence extraction, scoring, and each rule module pass.
 - Golden tests for the representative requests in the [Service Test Strategy](./test/service-test-strategy.md) pass.
-- ST-001 through ST-011 pass at the engine level (no HTTP involved; ST-012 requires Phase 4).
+- ST-001 through ST-011 and ST-013 pass at the engine level (no HTTP involved; ST-012 requires Phase 4).
 
 ## Phase 2 — HTTP API
 

@@ -28,6 +28,7 @@ Example:
   },
   "project": {
     "name": "example-web",
+    "domain": "web",
     "language": "typescript",
     "frameworks": ["react", "vite"],
     "testRunners": ["vitest", "playwright"]

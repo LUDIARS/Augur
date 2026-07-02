@@ -36,21 +36,14 @@ All three types are defined in the [Core Data Schema](../data/core-schema.md).
 
 The canonical list of qualities — with their default budgets, typical exemptions, and test case patterns — lives in the [Experience Goal Catalog](../data/experience-goal-catalog.md). When a goal has no explicit targets, Augur proposes default budgets from that catalog. Defaults draw on established perception thresholds (about 100ms feels instantaneous, about 1s keeps flow, 16.7ms per frame sustains 60fps motion).
 
-The core qualities, summarized:
+Qualities are grouped by domain in the catalog:
 
-| Quality | Default metrics | Default budget |
-| --- | --- | --- |
-| `responsiveness` | `api_latency`, `time_to_feedback` | p95 ≤ 100ms per interaction; ≤ 1000ms for task completion |
-| `smoothness` | `frame_time`, `long_task_count` | frame time ≤ 16.7ms; zero long tasks over 50ms during interaction |
-| `feedback` | `time_to_feedback` | visible acknowledgement ≤ 100ms after input |
-| `stability_feel` | `error_rate`, `crash_count` | zero crashes; error rate below the caller's stated tolerance |
-| `consistency` | latency spread (`p99 / p50`) | p99 within 3× of p50 for the same interaction |
-| `startup_readiness` | `time_to_interactive`, `first_meaningful_content` | interactive ≤ 2000ms cold; content ≤ 1000ms |
-| `progress_transparency` | `time_to_progress_indicator`, `silent_timeout_count` | progress shown ≤ 500ms for operations over 1s; zero silent timeouts |
-| `recoverability` | `input_loss_on_error`, `unguarded_destructive_actions` | zero input loss on failed submit; zero unguarded destructive actions |
-| `continuity` | `state_loss_on_reload` | zero loss of in-progress work across reload or reconnect |
-| `freshness` | `staleness_after_mutation` | own changes visible ≤ 1000ms; no residual results after reset |
-| `custom` | caller-defined | no default; explicit targets required |
+- **Common** (any interactive product): `responsiveness`, `smoothness`, `feedback`, `stability_feel`, `consistency`, `startup_readiness`, `progress_transparency`, `recoverability`, `continuity`
+- **Web**: `freshness`, `seamless_navigation`
+- **Game** (including networked play): `control_latency`, `frame_pacing`, `netplay_responsiveness`, `sync_integrity`, `disruption_tolerance`
+- **`custom`**: caller-defined; no defaults, explicit targets required.
+
+`ProjectContext.domain` selects which sections contribute default proposals: the common section always applies; the web and game sections apply when the domain matches. A caller may reference any quality explicitly regardless of domain — domain filtering only affects what Augur proposes on its own.
 
 Rules:
 
@@ -77,7 +70,7 @@ Exemptions come from two sources:
 ## Behavior
 
 1. Augur reads `experienceGoals` from the request. Goals may accompany any objective kind, not only `performance`.
-2. Each goal is resolved into one or more `ExperienceTarget`s: explicit targets pass through; missing targets are filled from the mapping table and flagged as proposed.
+2. Each goal is resolved into one or more `ExperienceTarget`s: explicit targets pass through; missing targets are filled from the catalog defaults for the project's domain and flagged as proposed.
 3. Exemptions are applied per the scope rules above, narrowing where each target generates strict guardrails and substituting relaxed budgets where defined.
 4. Each resolved target becomes an `Evidence` entry of type `experience_goal`; each applied exemption becomes an `Evidence` entry of type `budget_exemption`.
 5. Supplied `RuntimeSignal`s are compared against resolved targets where metric, unit, and scope match. A measurement exceeding its budget becomes an `Evidence` entry of type `budget_violation`. Signals inside an exempted scope are compared against the relaxed budget when one exists, and otherwise not flagged.

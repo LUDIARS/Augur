@@ -69,6 +69,8 @@ Examples:
 - unknown objective with minimal input
 - responsiveness goal with explicit budget and a violating runtime signal
 - responsiveness goal with an exempted scope and a relaxed budget
+- game domain: netplay responsiveness goal with an RTT runtime signal
+- game domain: sync integrity goal with a desync failure log
 
 Golden tests must run with LLM assistance disabled so that output is fully deterministic. See the [Planning Engine](../feature/planning-engine.md) spec.
 
@@ -153,6 +155,12 @@ Then signals inside the exempted scope must not produce violations against the s
 Given LLM assistance enabled and an LLM-proposed exemption for a scope,
 When Augur creates a plan,
 Then the exemption must appear as `budget_exemption` evidence labeled as LLM-proposed, must not delete any guardrail, and must not override a caller's explicit target for the same scope.
+
+### ST-013 Domain Filters Default Proposals
+
+Given `project.domain` is `"game"` and an abstract goal with no explicit targets,
+When Augur creates a plan,
+Then proposed defaults must come only from the common and game sections of the experience goal catalog, and web-only qualities must not be proposed unless the caller referenced them explicitly.
 
 ## CI Handling
 
