@@ -1,0 +1,178 @@
+{
+  "request": {
+    "objective": {
+      "kind": "performance",
+      "description": "The app should feel instant everywhere it matters."
+    },
+    "project": {
+      "domain": "web"
+    },
+    "experienceGoals": [
+      {
+        "quality": "responsiveness",
+        "targets": [
+          {
+            "metric": "api_latency",
+            "threshold": 20,
+            "unit": "ms",
+            "percentile": 95
+          }
+        ],
+        "exemptions": [
+          {
+            "scope": "auth (login, registration)",
+            "reason": "Users tolerate multi-second auth flows.",
+            "relaxedTarget": {
+              "metric": "api_latency",
+              "threshold": 3000,
+              "unit": "ms",
+              "percentile": 95
+            }
+          }
+        ]
+      }
+    ],
+    "runtimeSignals": [
+      {
+        "type": "api_latency",
+        "name": "search p95",
+        "value": 42,
+        "unit": "ms",
+        "percentile": 95,
+        "scope": "/search"
+      },
+      {
+        "type": "api_latency",
+        "name": "login p95",
+        "value": 800,
+        "unit": "ms",
+        "percentile": 95,
+        "scope": "/login"
+      }
+    ]
+  },
+  "expected": {
+    "summary": "Lead with \"Performance guardrail: api_latency p95 <= 20ms\" (critical), then investigate before changing code. 2 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Performance guardrail: api_latency p95 <= 20ms",
+          "kind": "performance",
+          "priority": "critical",
+          "confidence": 0.85,
+          "rationale": "A supplied measurement already exceeds this budget.",
+          "draft": {
+            "description": "Given the flow in scope, when api_latency is measured externally, then it must stay within 20ms."
+          },
+          "budget": {
+            "metric": "api_latency",
+            "threshold": 20,
+            "unit": "ms",
+            "percentile": 95
+          },
+          "evidenceIds": [
+            "ev-005",
+            "ev-008"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Performance guardrail: api_latency p95 <= 3000ms on auth (login, registration)",
+          "kind": "performance",
+          "priority": "medium",
+          "confidence": 0.7,
+          "rationale": "The caller set this budget explicitly; establish the external measurement first, then enforce it. Scope \"auth (login, registration)\" is exempted with a relaxed budget: Users tolerate multi-second auth flows.",
+          "draft": {
+            "description": "Given the flow in scope, when api_latency is measured externally, then it must stay within 3000ms."
+          },
+          "budget": {
+            "metric": "api_latency",
+            "threshold": 3000,
+            "unit": "ms",
+            "percentile": 95,
+            "scope": "auth (login, registration)"
+          },
+          "evidenceIds": [
+            "ev-006",
+            "ev-007"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Profile before changing code",
+          "description": "Measure and locate the bottleneck first; optimization guesses usually miss.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Optimize the located hotspot, guarded by the measurement",
+          "description": "Apply the smallest effective change and keep the external guardrail as the arbiter.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Optimizations often trade readability or memory for speed; the measurement must justify the trade."
+        }
+      ],
+      "rollback": "Revert the optimization if the external measurement shows no improvement or a regression elsewhere."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested performance: The app should feel instant everywhere it matters."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain web."
+      },
+      {
+        "id": "ev-003",
+        "type": "runtime_signal",
+        "detail": "search p95 p95 on /search measured at 42ms"
+      },
+      {
+        "id": "ev-004",
+        "type": "runtime_signal",
+        "detail": "login p95 p95 on /login measured at 800ms"
+      },
+      {
+        "id": "ev-005",
+        "type": "experience_goal",
+        "detail": "responsiveness budget: api_latency p95 <= 20ms, set by the caller."
+      },
+      {
+        "id": "ev-006",
+        "type": "experience_goal",
+        "detail": "responsiveness budget (relaxed by exemption): api_latency p95 <= 3000ms on auth (login, registration), set by the caller."
+      },
+      {
+        "id": "ev-007",
+        "type": "budget_exemption",
+        "detail": "Scope \"auth (login, registration)\" relaxed to 3000ms (caller): Users tolerate multi-second auth flows."
+      },
+      {
+        "id": "ev-008",
+        "type": "budget_violation",
+        "detail": "search p95 on /search measured 42ms, exceeding the responsiveness budget of 20ms."
+      }
+    ]
+  }
+}

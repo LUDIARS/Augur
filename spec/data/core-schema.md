@@ -14,6 +14,7 @@ type CreatePlanRequest = {
   failure?: FailureSignal;
   coverage?: CoverageSignal;
   runtimeSignals?: RuntimeSignal[];
+  experienceGoals?: ExperienceGoal[];
   constraints?: PlanningConstraint[];
 };
 ```
@@ -38,11 +39,70 @@ type Objective = {
 };
 ```
 
+## Experience Goals
+
+Experience goals express how the product should feel, and how that feel becomes measurable budgets. Semantics are defined in [Experience-Driven Constraints](../feature/experience-driven-constraints.md). Each quality's default budgets and test case patterns are cataloged in the [Experience Goal Catalog](./experience-goal-catalog.md).
+
+```ts
+type ExperienceGoal = {
+  quality:
+    // Common (any interactive product)
+    | "responsiveness"            // EG-C01
+    | "smoothness"                // EG-C02
+    | "feedback"                  // EG-C03
+    | "stability_feel"            // EG-C04
+    | "consistency"               // EG-C05
+    | "startup_readiness"         // EG-C06
+    | "progress_transparency"     // EG-C07
+    | "recoverability"            // EG-C08
+    | "continuity"                // EG-C09
+    | "effortlessness"            // EG-C10
+    | "accessibility"             // EG-C11
+    | "resource_frugality"        // EG-C12
+    // Web
+    | "freshness"                 // EG-W01
+    | "seamless_navigation"       // EG-W02
+    | "cross_browser_consistency" // EG-W03
+    | "shareability"              // EG-W04
+    // Game (including networked play)
+    | "control_latency"           // EG-G01
+    | "frame_pacing"              // EG-G02
+    | "netplay_responsiveness"    // EG-G03
+    | "sync_integrity"            // EG-G04
+    | "disruption_tolerance"      // EG-G05
+    | "matchmaking_flow"          // EG-G06
+    | "load_seamlessness"         // EG-G07
+    | "audio_visual_sync"         // EG-G08
+    | "fairness_feel"             // EG-G09
+    | "progression_integrity"     // EG-G10
+    | "custom";
+  description?: string;
+  targets?: ExperienceTarget[];      // explicit budgets; when absent, Augur proposes defaults
+  exemptions?: ExperienceExemption[]; // scopes where the strict budget does not apply
+};
+
+type ExperienceTarget = {
+  metric: string;      // e.g. "api_latency", "time_to_feedback", "frame_time"
+  threshold: number;   // e.g. 20
+  unit: string;        // e.g. "ms"
+  percentile?: number; // e.g. 95
+  scope?: string;      // endpoint, flow, or area; absent means "applies everywhere"
+};
+
+type ExperienceExemption = {
+  scope: string;                     // e.g. "auth (login, registration)"
+  reason: string;                    // why strictness is not required here
+  relaxedTarget?: ExperienceTarget;  // substitute budget; absent means fully waived
+  proposedBy?: "caller" | "llm";     // defaults to "caller" when supplied in a request
+};
+```
+
 ## ProjectContext
 
 ```ts
 type ProjectContext = {
   name?: string;
+  domain?: "web" | "game" | "service" | "other"; // selects which catalog sections contribute default proposals
   language?: string;
   frameworks?: string[];
   testRunners?: string[];
@@ -76,6 +136,8 @@ type RuntimeSignal = {
   name: string;
   value: number;
   unit: string;
+  percentile?: number; // when the value is a percentile measurement, e.g. 95
+  scope?: string;      // endpoint, flow, or area the measurement belongs to
   source?: string;
 };
 ```
@@ -108,15 +170,30 @@ type TestSuggestion = {
     | "e2e"
     | "performance"
     | "regression"
+    | "security"
     | "flaky";
   priority: "critical" | "high" | "medium" | "low";
-  confidence: number;
+  confidence: number; // 0.0 to 1.0, see "Confidence" below
   targetFiles?: string[];
   rationale: string;
   draft: TestDraft;
+  budget?: ExperienceTarget; // the concrete budget this test asserts, when derived from an experience goal
+  proposedBudget?: boolean;  // true when Augur proposed the budget instead of the caller
   evidenceIds: string[];
 };
 ```
+
+### Confidence
+
+`confidence` expresses how strongly the available evidence supports a suggestion. It is a number between `0.0` and `1.0` inclusive.
+
+Interpretation bands:
+
+- `0.8` – `1.0`: directly supported by explicit evidence such as a failure log or diff that matches the objective.
+- `0.5` – `0.79`: supported by partial or indirect evidence.
+- `0.0` – `0.49`: speculative; derived mainly from the objective description with little corroborating signal.
+
+How confidence is computed is defined in the [Planning Engine](../feature/planning-engine.md) spec.
 
 ## FixPolicy
 
@@ -134,6 +211,7 @@ type FixStep = {
   description: string;
   targetFiles?: string[];
   dependsOn?: string[];
+  evidenceIds: string[];
 };
 ```
 
@@ -156,6 +234,9 @@ type Evidence = {
     | "stack_trace"
     | "coverage"
     | "runtime_signal"
+    | "experience_goal"
+    | "budget_violation"
+    | "budget_exemption"
     | "project_metadata";
   file?: string;
   detail: string;

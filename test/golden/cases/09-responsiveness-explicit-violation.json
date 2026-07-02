@@ -1,0 +1,124 @@
+{
+  "request": {
+    "objective": {
+      "kind": "performance",
+      "description": "Search should feel instant."
+    },
+    "project": {
+      "domain": "web"
+    },
+    "experienceGoals": [
+      {
+        "quality": "responsiveness",
+        "targets": [
+          {
+            "metric": "api_latency",
+            "threshold": 20,
+            "unit": "ms",
+            "percentile": 95,
+            "scope": "/search"
+          }
+        ]
+      }
+    ],
+    "runtimeSignals": [
+      {
+        "type": "api_latency",
+        "name": "search p95",
+        "value": 42,
+        "unit": "ms",
+        "percentile": 95,
+        "scope": "/search",
+        "source": "staging"
+      }
+    ]
+  },
+  "expected": {
+    "summary": "Lead with \"Performance guardrail: api_latency p95 <= 20ms on /search\" (critical), then investigate before changing code. 1 test suggestion, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Performance guardrail: api_latency p95 <= 20ms on /search",
+          "kind": "performance",
+          "priority": "critical",
+          "confidence": 0.85,
+          "rationale": "A supplied measurement already exceeds this budget.",
+          "draft": {
+            "description": "Given the flow in scope, when api_latency is measured externally, then it must stay within 20ms."
+          },
+          "budget": {
+            "metric": "api_latency",
+            "threshold": 20,
+            "unit": "ms",
+            "percentile": 95,
+            "scope": "/search"
+          },
+          "evidenceIds": [
+            "ev-004",
+            "ev-005"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Profile before changing code",
+          "description": "Measure and locate the bottleneck first; optimization guesses usually miss.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Optimize the located hotspot, guarded by the measurement",
+          "description": "Apply the smallest effective change and keep the external guardrail as the arbiter.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Optimizations often trade readability or memory for speed; the measurement must justify the trade."
+        }
+      ],
+      "rollback": "Revert the optimization if the external measurement shows no improvement or a regression elsewhere."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested performance: Search should feel instant."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain web."
+      },
+      {
+        "id": "ev-003",
+        "type": "runtime_signal",
+        "detail": "search p95 p95 on /search measured at 42ms (staging)"
+      },
+      {
+        "id": "ev-004",
+        "type": "experience_goal",
+        "detail": "responsiveness budget: api_latency p95 <= 20ms on /search, set by the caller."
+      },
+      {
+        "id": "ev-005",
+        "type": "budget_violation",
+        "detail": "search p95 on /search measured 42ms, exceeding the responsiveness budget of 20ms."
+      }
+    ]
+  }
+}

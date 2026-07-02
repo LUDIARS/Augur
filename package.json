@@ -1,0 +1,29 @@
+{
+  "name": "augur",
+  "version": "0.1.0",
+  "description": "Purpose-driven test planning and fix policy service",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types src/http/main.ts",
+    "start": "node dist/http/main.js",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "golden:update": "node --experimental-strip-types scripts/update-golden.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}

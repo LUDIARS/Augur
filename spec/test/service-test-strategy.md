@@ -25,8 +25,8 @@ Purpose:
 
 - Validate objective classification.
 - Validate signal normalization.
-- Validate omen extraction.
-- Validate priority selection.
+- Validate evidence extraction.
+- Validate priority and confidence scoring.
 - Validate fix policy strategy selection.
 
 Execution:
@@ -64,6 +64,15 @@ Examples:
 - regression objective with failure log
 - refactor objective with changed files
 - performance objective with runtime signal
+- stability objective with intermittent failure log
+- security objective with changed files
+- unknown objective with minimal input
+- responsiveness goal with explicit budget and a violating runtime signal
+- responsiveness goal with an exempted scope and a relaxed budget
+- game domain: netplay responsiveness goal with an RTT runtime signal
+- game domain: sync integrity goal with a desync failure log
+
+Golden tests must run with LLM assistance disabled so that output is fully deterministic. See the [Planning Engine](../feature/planning-engine.md) spec.
 
 ### Safety Tests
 
@@ -104,6 +113,54 @@ Then they must reference evidence.
 Given only an objective and changed files,
 When Augur creates a plan,
 Then it should return partial guidance instead of failing solely due to missing diff or logs.
+
+### ST-006 Stability Investigates Before Fixing
+
+Given a stability objective without a deterministic reproduction,
+When Augur creates a plan,
+Then the test plan should include flaky-behavior checks and the fix policy should prefer `investigate_first`.
+
+### ST-007 Identical Input Produces Identical Output
+
+Given the same request submitted twice with LLM assistance disabled,
+When Augur creates both plans,
+Then the two responses must be byte-identical.
+
+### ST-008 Explicit Budget Produces a Guardrail Carrying the Budget
+
+Given an experience goal with an explicit target such as `api_latency p95 ≤ 20ms`,
+When Augur creates a plan,
+Then the test plan must include a performance guardrail whose `budget` field equals the explicit target.
+
+### ST-009 Abstract Quality Produces Labeled Proposals
+
+Given an experience goal with a quality but no explicit targets,
+When Augur creates a plan,
+Then the derived guardrails must set `proposedBudget: true`, carry confidence of at most `0.6`, and state in the rationale that the budget is a proposal.
+
+### ST-010 Budget Violations Raise Priority
+
+Given an explicit budget and a runtime signal exceeding it,
+When Augur creates a plan,
+Then the response must include `budget_violation` evidence and the matching guardrail must have `critical` or `high` priority with confidence of at least `0.8`.
+
+### ST-011 Exemptions Relax Without Removing Coverage
+
+Given a budget that applies everywhere and a caller exemption with a relaxed target for one scope,
+When Augur creates a plan,
+Then signals inside the exempted scope must not produce violations against the strict budget, and a guardrail against the relaxed budget must still be suggested for that scope.
+
+### ST-012 LLM Proposals Are Labeled and Subordinate
+
+Given LLM assistance enabled and an LLM-proposed exemption for a scope,
+When Augur creates a plan,
+Then the exemption must appear as `budget_exemption` evidence labeled as LLM-proposed, must not delete any guardrail, and must not override a caller's explicit target for the same scope.
+
+### ST-013 Domain Filters Default Proposals
+
+Given `project.domain` is `"game"` and an abstract goal with no explicit targets,
+When Augur creates a plan,
+Then proposed defaults must come only from the common and game sections of the experience goal catalog, and web-only qualities must not be proposed unless the caller referenced them explicitly.
 
 ## CI Handling
 

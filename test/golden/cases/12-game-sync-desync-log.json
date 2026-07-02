@@ -1,0 +1,184 @@
+{
+  "request": {
+    "objective": {
+      "kind": "stability",
+      "description": "Players report rubber-banding and phantom hits in ranked matches."
+    },
+    "project": {
+      "name": "arena-shooter",
+      "domain": "game"
+    },
+    "experienceGoals": [
+      {
+        "quality": "sync_integrity"
+      }
+    ],
+    "failure": {
+      "command": "replay-checker match-8841",
+      "exitCode": 1,
+      "stderr": "checksum mismatch at frame 5412 (client A vs server)"
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Repeat-run flakiness check on the affected flow\" (high), then investigate before changing code. 5 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Repeat-run flakiness check on the affected flow",
+          "kind": "flaky",
+          "priority": "high",
+          "confidence": 0.75,
+          "rationale": "Intermittent behavior only shows under repetition; N consecutive runs expose the flake rate.",
+          "draft": {
+            "description": "Given the affected flow, when it is executed N times consecutively by the external runner, then all runs must pass."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Deterministic replay check: desync_count <= 0count",
+          "kind": "regression",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "EG-G04 --realized-by--> KR-G04a --verified-by--> TP-G04-1. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given the same input script run on two simulation instances, when state checksums are compared every N frames, then all checksums must match."
+          },
+          "budget": {
+            "metric": "desync_count",
+            "threshold": 0,
+            "unit": "count"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-004"
+          ]
+        },
+        {
+          "id": "test-003",
+          "title": "Rollback depth audit: rollback_depth <= 3frames",
+          "kind": "integration",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "EG-G04 --realized-by--> KR-G04b --verified-by--> TP-G04-2. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given emulated jitter at the supported RTT ceiling, when a scripted exchange runs, then no correction may exceed the budgeted rollback depth."
+          },
+          "budget": {
+            "metric": "rollback_depth",
+            "threshold": 3,
+            "unit": "frames"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-005"
+          ]
+        },
+        {
+          "id": "test-004",
+          "title": "Authority divergence guardrail: authority_divergence <= 1units",
+          "kind": "integration",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "EG-G04 --realized-by--> KR-G04c --verified-by--> TP-G04-3. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given a scripted movement pattern under emulated latency, when client and server positions are sampled, then divergence must stay within the threshold."
+          },
+          "budget": {
+            "metric": "authority_divergence",
+            "threshold": 1,
+            "unit": "units"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-006"
+          ]
+        },
+        {
+          "id": "test-005",
+          "title": "Nondeterminism audit (time, ordering, shared state)",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "Flaky behavior usually traces to clocks, unordered collections, races, or leaked state between tests.",
+          "draft": {
+            "description": "Given the suspected code paths, when time, ordering, and shared state are controlled, then results are identical across runs."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Make the failure reproducible first",
+          "description": "Capture seeds, timing, and environment until the failure reproduces deterministically.",
+          "evidenceIds": [
+            "ev-001",
+            "ev-003"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Then remove the source of nondeterminism",
+          "description": "With a deterministic reproduction in hand, apply a minimal fix and keep the repeat-run guard.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-003"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Retry-based mitigation hides flakes instead of fixing them; prefer removing the nondeterminism."
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested stability: Players report rubber-banding and phantom hits in ranked matches."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain game."
+      },
+      {
+        "id": "ev-003",
+        "type": "failure_log",
+        "detail": "replay-checker match-8841 exited with code 1: checksum mismatch at frame 5412 (client A vs server)"
+      },
+      {
+        "id": "ev-004",
+        "type": "experience_goal",
+        "detail": "sync_integrity budget: desync_count <= 0count, proposed from the experience goal catalog (EG-G04 KR-G04a)."
+      },
+      {
+        "id": "ev-005",
+        "type": "experience_goal",
+        "detail": "sync_integrity budget: rollback_depth <= 3frames, proposed from the experience goal catalog (EG-G04 KR-G04b)."
+      },
+      {
+        "id": "ev-006",
+        "type": "experience_goal",
+        "detail": "sync_integrity budget: authority_divergence <= 1units, proposed from the experience goal catalog (EG-G04 KR-G04c)."
+      }
+    ]
+  }
+}

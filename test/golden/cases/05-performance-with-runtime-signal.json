@@ -1,0 +1,84 @@
+{
+  "request": {
+    "objective": {
+      "kind": "performance",
+      "description": "Dashboard load feels slow on large accounts."
+    },
+    "runtimeSignals": [
+      {
+        "type": "api_latency",
+        "name": "dashboard p95",
+        "value": 2400,
+        "unit": "ms",
+        "percentile": 95,
+        "source": "staging"
+      }
+    ]
+  },
+  "expected": {
+    "summary": "Lead with \"Pin the current measurement as an external guardrail\" (high), then investigate before changing code. 1 test suggestion, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Pin the current measurement as an external guardrail",
+          "kind": "performance",
+          "priority": "high",
+          "confidence": 0.7,
+          "rationale": "Runtime measurements were supplied without an explicit budget; pinning them stops silent regressions while the target is negotiated.",
+          "draft": {
+            "description": "Given the supplied measurement as a provisional baseline, when the metric is measured externally in CI, then it must not regress beyond the agreed tolerance."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-002"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Profile before changing code",
+          "description": "Measure and locate the bottleneck first; optimization guesses usually miss.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Optimize the located hotspot, guarded by the measurement",
+          "description": "Apply the smallest effective change and keep the external guardrail as the arbiter.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Optimizations often trade readability or memory for speed; the measurement must justify the trade."
+        }
+      ],
+      "rollback": "Revert the optimization if the external measurement shows no improvement or a regression elsewhere."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested performance: Dashboard load feels slow on large accounts."
+      },
+      {
+        "id": "ev-002",
+        "type": "runtime_signal",
+        "detail": "dashboard p95 p95 measured at 2400ms (staging)"
+      }
+    ]
+  }
+}

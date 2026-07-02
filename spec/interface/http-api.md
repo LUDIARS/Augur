@@ -28,6 +28,7 @@ Example:
   },
   "project": {
     "name": "example-web",
+    "domain": "web",
     "language": "typescript",
     "frameworks": ["react", "vite"],
     "testRunners": ["vitest", "playwright"]
@@ -77,14 +78,16 @@ Example:
         "id": "fix-001",
         "title": "Add failing regression coverage",
         "description": "Add a test that reproduces stale results after clearing the query.",
-        "targetFiles": ["src/search.test.ts"]
+        "targetFiles": ["src/search.test.ts"],
+        "evidenceIds": ["ev-001"]
       },
       {
         "id": "fix-002",
         "title": "Reset result state for empty query",
         "description": "Apply the smallest code change that clears cached results when query input is blank.",
         "targetFiles": ["src/search.ts"],
-        "dependsOn": ["fix-001"]
+        "dependsOn": ["fix-001"],
+        "evidenceIds": ["ev-001", "ev-002"]
       }
     ],
     "risks": [
@@ -101,10 +104,51 @@ Example:
       "id": "ev-001",
       "type": "objective",
       "detail": "Caller requested a bug fix for stale search results after clearing the query."
+    },
+    {
+      "id": "ev-002",
+      "type": "failure_log",
+      "detail": "npm run test exited with code 1: expected [] to equal [...]"
     }
   ]
 }
 ```
+
+## Experience-Driven Requests
+
+`CreatePlanRequest` accepts `experienceGoals` so callers can express UX qualities and budgets directly. Semantics are defined in [Experience-Driven Constraints](../feature/experience-driven-constraints.md).
+
+Request fragment:
+
+```json
+{
+  "objective": {
+    "kind": "performance",
+    "description": "The app should feel instant."
+  },
+  "experienceGoals": [
+    {
+      "quality": "responsiveness",
+      "targets": [
+        { "metric": "api_latency", "threshold": 20, "unit": "ms", "percentile": 95 }
+      ],
+      "exemptions": [
+        {
+          "scope": "auth (login, registration)",
+          "reason": "Users tolerate multi-second auth flows.",
+          "relaxedTarget": { "metric": "api_latency", "threshold": 3000, "unit": "ms", "percentile": 95 }
+        }
+      ]
+    }
+  ],
+  "runtimeSignals": [
+    { "type": "api_latency", "name": "search p95", "value": 42, "unit": "ms", "percentile": 95, "scope": "/search" },
+    { "type": "api_latency", "name": "login p95", "value": 800, "unit": "ms", "percentile": 95, "scope": "/login" }
+  ]
+}
+```
+
+The resulting plan contains a `critical` guardrail for `/search` (explicit 20ms budget, already violated at 42ms) carrying the budget in the suggestion's `budget` field, and a lower-priority guardrail for auth flows against the relaxed 3s budget. The `/login` measurement is not flagged as a violation because it falls inside the exempted scope and under the relaxed budget.
 
 ## Health Check
 

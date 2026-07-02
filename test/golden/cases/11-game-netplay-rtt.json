@@ -1,0 +1,138 @@
+{
+  "request": {
+    "objective": {
+      "kind": "performance",
+      "description": "Online matches should feel like offline play."
+    },
+    "project": {
+      "name": "arena-shooter",
+      "domain": "game"
+    },
+    "experienceGoals": [
+      {
+        "quality": "netplay_responsiveness"
+      }
+    ],
+    "runtimeSignals": [
+      {
+        "type": "custom",
+        "name": "perceived_action_latency",
+        "value": 140,
+        "unit": "ms",
+        "source": "netcode harness at 150ms RTT"
+      }
+    ]
+  },
+  "expected": {
+    "summary": "Lead with \"Emulated-RTT action test: perceived_action_latency <= 100ms\" (high), then investigate before changing code. 2 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Emulated-RTT action test: perceived_action_latency <= 100ms",
+          "kind": "e2e",
+          "priority": "high",
+          "confidence": 0.6,
+          "rationale": "EG-G03 --realized-by--> KR-G03a --verified-by--> TP-G03-1. A supplied measurement already exceeds this budget. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given two headless clients connected through network emulation at the supported RTT ceiling, when a scripted action fires, then the acting client’s perceived action latency must be within the budget."
+          },
+          "budget": {
+            "metric": "perceived_action_latency",
+            "threshold": 100,
+            "unit": "ms"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-004",
+            "ev-006"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Tick budget guardrail: tick_overrun_count <= 0count",
+          "kind": "performance",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "EG-G03 --realized-by--> KR-G03b --verified-by--> TP-G03-2. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given the server under representative match load, when tick durations are measured externally, then p99 tick duration must fit the tick interval."
+          },
+          "budget": {
+            "metric": "tick_overrun_count",
+            "threshold": 0,
+            "unit": "count"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-005"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Profile before changing code",
+          "description": "Measure and locate the bottleneck first; optimization guesses usually miss.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Optimize the located hotspot, guarded by the measurement",
+          "description": "Apply the smallest effective change and keep the external guardrail as the arbiter.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Optimizations often trade readability or memory for speed; the measurement must justify the trade."
+        }
+      ],
+      "rollback": "Revert the optimization if the external measurement shows no improvement or a regression elsewhere."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested performance: Online matches should feel like offline play."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain game."
+      },
+      {
+        "id": "ev-003",
+        "type": "runtime_signal",
+        "detail": "perceived_action_latency measured at 140ms (netcode harness at 150ms RTT)"
+      },
+      {
+        "id": "ev-004",
+        "type": "experience_goal",
+        "detail": "netplay_responsiveness budget: perceived_action_latency <= 100ms, proposed from the experience goal catalog (EG-G03 KR-G03a)."
+      },
+      {
+        "id": "ev-005",
+        "type": "experience_goal",
+        "detail": "netplay_responsiveness budget: tick_overrun_count <= 0count, proposed from the experience goal catalog (EG-G03 KR-G03b)."
+      },
+      {
+        "id": "ev-006",
+        "type": "budget_violation",
+        "detail": "perceived_action_latency measured 140ms, exceeding the netplay_responsiveness budget of 100ms."
+      }
+    ]
+  }
+}

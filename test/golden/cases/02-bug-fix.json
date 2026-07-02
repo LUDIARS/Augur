@@ -1,0 +1,132 @@
+{
+  "request": {
+    "objective": {
+      "kind": "bug_fix",
+      "description": "Fix search returning stale results after clearing the query.",
+      "desiredOutcome": "Search results should reset when query is empty."
+    },
+    "project": {
+      "name": "example-web",
+      "domain": "web",
+      "language": "typescript",
+      "frameworks": [
+        "react",
+        "vite"
+      ],
+      "testRunners": [
+        "vitest",
+        "playwright"
+      ]
+    },
+    "change": {
+      "changedFiles": [
+        "src/search.ts",
+        "src/search.test.ts"
+      ]
+    },
+    "failure": {
+      "command": "npm run test",
+      "exitCode": 1,
+      "stderr": "expected [] to equal [...]"
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Regression test reproducing: Fix search returning stale results after clearing the query.\" (high), then write the failing test first, then fix. 1 test suggestion, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Regression test reproducing: Fix search returning stale results after clearing the query.",
+          "kind": "regression",
+          "priority": "high",
+          "confidence": 0.9,
+          "targetFiles": [
+            "src/search.test.ts"
+          ],
+          "rationale": "A failure signal was supplied; a regression test that reproduces it locks the bug out.",
+          "draft": {
+            "framework": "vitest",
+            "description": "Given the conditions described in the objective, when the buggy path runs, then the expected behavior (Search results should reset when query is empty.) must hold."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-005",
+            "ev-003",
+            "ev-004"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "test_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Add failing regression coverage",
+          "description": "Add a test that reproduces the reported failure before touching the implementation.",
+          "targetFiles": [
+            "src/search.test.ts"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-005"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Apply the narrowest fix that passes the new test",
+          "description": "Change only what the regression test demands; avoid opportunistic refactoring.",
+          "targetFiles": [
+            "src/search.ts"
+          ],
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-005",
+            "ev-003",
+            "ev-004"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "A narrow fix may mask a broader defect class; check neighboring code paths for the same pattern."
+        }
+      ],
+      "rollback": "Revert the fix commit; keep the regression test as documentation of the expected behavior."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested bug fix: Fix search returning stale results after clearing the query."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain web; frameworks react, vite; test runners vitest, playwright."
+      },
+      {
+        "id": "ev-003",
+        "type": "changed_file",
+        "file": "src/search.ts",
+        "detail": "Changed file: src/search.ts"
+      },
+      {
+        "id": "ev-004",
+        "type": "changed_file",
+        "file": "src/search.test.ts",
+        "detail": "Changed file: src/search.test.ts"
+      },
+      {
+        "id": "ev-005",
+        "type": "failure_log",
+        "detail": "npm run test exited with code 1: expected [] to equal [...]"
+      }
+    ]
+  }
+}
