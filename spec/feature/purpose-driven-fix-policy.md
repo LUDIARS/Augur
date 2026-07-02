@@ -15,6 +15,7 @@ so that I can choose a safe implementation direction before editing code.
 ## Inputs
 
 - Objective kind and description
+- Experience goals, resolved budgets, and budget violations
 - Failure logs and stack traces
 - Code diff or changed files
 - Runtime and coverage signals
@@ -59,6 +60,7 @@ The policy must include:
 ## Related Specs
 
 - [Core Data Schema](../data/core-schema.md)
+- [Experience-Driven Constraints](./experience-driven-constraints.md)
 - [Planning Engine](./planning-engine.md)
 - [HTTP API](../interface/http-api.md)
 - [Service Test Strategy](../test/service-test-strategy.md)

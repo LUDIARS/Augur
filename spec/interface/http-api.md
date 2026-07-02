@@ -113,6 +113,42 @@ Example:
 }
 ```
 
+## Experience-Driven Requests
+
+`CreatePlanRequest` accepts `experienceGoals` so callers can express UX qualities and budgets directly. Semantics are defined in [Experience-Driven Constraints](../feature/experience-driven-constraints.md).
+
+Request fragment:
+
+```json
+{
+  "objective": {
+    "kind": "performance",
+    "description": "The app should feel instant."
+  },
+  "experienceGoals": [
+    {
+      "quality": "responsiveness",
+      "targets": [
+        { "metric": "api_latency", "threshold": 20, "unit": "ms", "percentile": 95 }
+      ],
+      "exemptions": [
+        {
+          "scope": "auth (login, registration)",
+          "reason": "Users tolerate multi-second auth flows.",
+          "relaxedTarget": { "metric": "api_latency", "threshold": 3000, "unit": "ms", "percentile": 95 }
+        }
+      ]
+    }
+  ],
+  "runtimeSignals": [
+    { "type": "api_latency", "name": "search p95", "value": 42, "unit": "ms", "percentile": 95, "scope": "/search" },
+    { "type": "api_latency", "name": "login p95", "value": 800, "unit": "ms", "percentile": 95, "scope": "/login" }
+  ]
+}
+```
+
+The resulting plan contains a `critical` guardrail for `/search` (explicit 20ms budget, already violated at 42ms) carrying the budget in the suggestion's `budget` field, and a lower-priority guardrail for auth flows against the relaxed 3s budget. The `/login` measurement is not flagged as a violation because it falls inside the exempted scope and under the relaxed budget.
+
 ## Health Check
 
 ```http

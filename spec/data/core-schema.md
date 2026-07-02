@@ -14,6 +14,7 @@ type CreatePlanRequest = {
   failure?: FailureSignal;
   coverage?: CoverageSignal;
   runtimeSignals?: RuntimeSignal[];
+  experienceGoals?: ExperienceGoal[];
   constraints?: PlanningConstraint[];
 };
 ```
@@ -35,6 +36,40 @@ type Objective = {
     | "unknown";
   description: string;
   desiredOutcome?: string;
+};
+```
+
+## Experience Goals
+
+Experience goals express how the product should feel, and how that feel becomes measurable budgets. Semantics are defined in [Experience-Driven Constraints](../feature/experience-driven-constraints.md).
+
+```ts
+type ExperienceGoal = {
+  quality:
+    | "responsiveness"
+    | "smoothness"
+    | "feedback"
+    | "stability_feel"
+    | "consistency"
+    | "custom";
+  description?: string;
+  targets?: ExperienceTarget[];      // explicit budgets; when absent, Augur proposes defaults
+  exemptions?: ExperienceExemption[]; // scopes where the strict budget does not apply
+};
+
+type ExperienceTarget = {
+  metric: string;      // e.g. "api_latency", "time_to_feedback", "frame_time"
+  threshold: number;   // e.g. 20
+  unit: string;        // e.g. "ms"
+  percentile?: number; // e.g. 95
+  scope?: string;      // endpoint, flow, or area; absent means "applies everywhere"
+};
+
+type ExperienceExemption = {
+  scope: string;                     // e.g. "auth (login, registration)"
+  reason: string;                    // why strictness is not required here
+  relaxedTarget?: ExperienceTarget;  // substitute budget; absent means fully waived
+  proposedBy?: "caller" | "llm";     // defaults to "caller" when supplied in a request
 };
 ```
 
@@ -76,6 +111,8 @@ type RuntimeSignal = {
   name: string;
   value: number;
   unit: string;
+  percentile?: number; // when the value is a percentile measurement, e.g. 95
+  scope?: string;      // endpoint, flow, or area the measurement belongs to
   source?: string;
 };
 ```
@@ -115,6 +152,8 @@ type TestSuggestion = {
   targetFiles?: string[];
   rationale: string;
   draft: TestDraft;
+  budget?: ExperienceTarget; // the concrete budget this test asserts, when derived from an experience goal
+  proposedBudget?: boolean;  // true when Augur proposed the budget instead of the caller
   evidenceIds: string[];
 };
 ```
@@ -170,6 +209,9 @@ type Evidence = {
     | "stack_trace"
     | "coverage"
     | "runtime_signal"
+    | "experience_goal"
+    | "budget_violation"
+    | "budget_exemption"
     | "project_metadata";
   file?: string;
   detail: string;

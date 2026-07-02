@@ -15,6 +15,7 @@ so that I can create the right tests before or after changing code.
 ## Inputs
 
 - Objective kind and description
+- Experience goals with optional explicit budgets and exemptions
 - Changed files
 - Git diff
 - Existing failure logs
@@ -36,7 +37,7 @@ so that I can create the right tests before or after changing code.
 - `bug_fix`: suggest regression tests that reproduce the bug.
 - `regression`: suggest narrow tests around the failing behavior and nearby boundaries.
 - `refactor`: suggest behavior-preserving tests and existing contract checks.
-- `performance`: suggest externally measured performance guardrails.
+- `performance`: suggest externally measured performance guardrails, derived from experience budgets when goals are supplied (see [Experience-Driven Constraints](./experience-driven-constraints.md)).
 - `stability`: suggest flaky and nondeterministic behavior checks.
 - `security`: suggest validation, authorization, and abuse-case tests.
 - `unknown`: suggest investigation-first tests based on available evidence.
@@ -64,6 +65,7 @@ Each suggestion must include:
 ## Related Specs
 
 - [Core Data Schema](../data/core-schema.md)
+- [Experience-Driven Constraints](./experience-driven-constraints.md)
 - [Planning Engine](./planning-engine.md)
 - [HTTP API](../interface/http-api.md)
 - [Service Test Strategy](../test/service-test-strategy.md)

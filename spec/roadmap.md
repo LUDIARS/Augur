@@ -21,13 +21,14 @@ Scope:
 
 - The six-stage pipeline defined in the [Planning Engine](./feature/planning-engine.md) spec.
 - Rule modules for all eight objective kinds.
+- Experience goal resolution, caller-supplied exemptions, and budget-violation detection per [Experience-Driven Constraints](./feature/experience-driven-constraints.md) (deterministic parts only; LLM exemption proposals are Phase 4).
 - Evidence extraction, scoring, and deterministic assembly.
 
 Acceptance:
 
 - Unit tests for normalization, evidence extraction, scoring, and each rule module pass.
 - Golden tests for the representative requests in the [Service Test Strategy](./test/service-test-strategy.md) pass.
-- ST-001 through ST-007 pass at the engine level (no HTTP involved).
+- ST-001 through ST-011 pass at the engine level (no HTTP involved; ST-012 requires Phase 4).
 
 ## Phase 2 — HTTP API
 
@@ -54,17 +55,19 @@ Acceptance:
 - A new `spec/interface/cli.md` is written before implementation starts.
 - The CLI produces the same plan as the HTTP API for the same input.
 
-## Phase 4 — LLM Enrichment
+## Phase 4 — LLM Assistance
 
 Scope:
 
-- The optional prose-only enrichment stage defined in the [Planning Engine](./feature/planning-engine.md) spec.
+- The optional prose enrichment stage defined in the [Planning Engine](./feature/planning-engine.md) spec.
+- LLM exemption proposals: semantic judgment of which scopes a UX budget should not strictly cover (for example, login and registration flows), emitted as labeled `ExperienceExemption` proposals.
 - Provider abstraction behind `AUGUR_LLM_PROVIDER` / `AUGUR_LLM_API_KEY`.
 
 Acceptance:
 
-- With enrichment disabled, all golden tests still pass unchanged.
-- Tests prove enrichment cannot alter structural fields.
+- With LLM assistance disabled, all golden tests still pass unchanged.
+- Tests prove prose enrichment cannot alter structural fields.
+- ST-012 passes: LLM-proposed exemptions are labeled, never delete guardrails, and never override caller-explicit targets.
 
 ## Phase 5 — Persistence and History
 

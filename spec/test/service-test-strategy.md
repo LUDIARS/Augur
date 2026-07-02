@@ -67,8 +67,10 @@ Examples:
 - stability objective with intermittent failure log
 - security objective with changed files
 - unknown objective with minimal input
+- responsiveness goal with explicit budget and a violating runtime signal
+- responsiveness goal with an exempted scope and a relaxed budget
 
-Golden tests must run with LLM enrichment disabled so that output is fully deterministic. See the [Planning Engine](../feature/planning-engine.md) spec.
+Golden tests must run with LLM assistance disabled so that output is fully deterministic. See the [Planning Engine](../feature/planning-engine.md) spec.
 
 ### Safety Tests
 
@@ -118,9 +120,39 @@ Then the test plan should include flaky-behavior checks and the fix policy shoul
 
 ### ST-007 Identical Input Produces Identical Output
 
-Given the same request submitted twice with LLM enrichment disabled,
+Given the same request submitted twice with LLM assistance disabled,
 When Augur creates both plans,
 Then the two responses must be byte-identical.
+
+### ST-008 Explicit Budget Produces a Guardrail Carrying the Budget
+
+Given an experience goal with an explicit target such as `api_latency p95 ≤ 20ms`,
+When Augur creates a plan,
+Then the test plan must include a performance guardrail whose `budget` field equals the explicit target.
+
+### ST-009 Abstract Quality Produces Labeled Proposals
+
+Given an experience goal with a quality but no explicit targets,
+When Augur creates a plan,
+Then the derived guardrails must set `proposedBudget: true`, carry confidence of at most `0.6`, and state in the rationale that the budget is a proposal.
+
+### ST-010 Budget Violations Raise Priority
+
+Given an explicit budget and a runtime signal exceeding it,
+When Augur creates a plan,
+Then the response must include `budget_violation` evidence and the matching guardrail must have `critical` or `high` priority with confidence of at least `0.8`.
+
+### ST-011 Exemptions Relax Without Removing Coverage
+
+Given a budget that applies everywhere and a caller exemption with a relaxed target for one scope,
+When Augur creates a plan,
+Then signals inside the exempted scope must not produce violations against the strict budget, and a guardrail against the relaxed budget must still be suggested for that scope.
+
+### ST-012 LLM Proposals Are Labeled and Subordinate
+
+Given LLM assistance enabled and an LLM-proposed exemption for a scope,
+When Augur creates a plan,
+Then the exemption must appear as `budget_exemption` evidence labeled as LLM-proposed, must not delete any guardrail, and must not override a caller's explicit target for the same scope.
 
 ## CI Handling
 
