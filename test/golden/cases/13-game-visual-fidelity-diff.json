@@ -1,0 +1,192 @@
+{
+  "request": {
+    "objective": {
+      "kind": "regression",
+      "description": "The lighting rework must not visually break existing scenes."
+    },
+    "project": {
+      "name": "open-world-rpg",
+      "domain": "game"
+    },
+    "experienceGoals": [
+      {
+        "quality": "visual_fidelity"
+      }
+    ],
+    "runtimeSignals": [
+      {
+        "type": "media_analysis",
+        "name": "golden_image_diff",
+        "value": 7.5,
+        "unit": "%",
+        "scope": "chapter 3 vista",
+        "source": "capture-rig 1.4 / perceptual-diff 2.1"
+      }
+    ]
+  },
+  "expected": {
+    "summary": "Lead with \"Narrow test around the failing behavior\" (critical), then write the failing test first, then fix. 5 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Narrow test around the failing behavior",
+          "kind": "regression",
+          "priority": "critical",
+          "confidence": 0.55,
+          "rationale": "Something that used to work broke; the first test should pin the exact failing behavior.",
+          "draft": {
+            "description": "Given the previously working scenario, when it runs against the current build, then the prior behavior must hold."
+          },
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Golden-image sweep: golden_image_diff <= 2%",
+          "kind": "regression",
+          "priority": "high",
+          "confidence": 0.6,
+          "rationale": "EG-G11 --realized-by--> KR-G11a --verified-by--> TP-G11-1. A supplied measurement already exceeds this budget. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given a scripted camera tour re-rendered on the candidate build, when each capture is compared perceptually against its approved golden reference, then no shot may diff beyond the budget without an explicit baseline update."
+          },
+          "budget": {
+            "metric": "golden_image_diff",
+            "threshold": 2,
+            "unit": "%"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-004",
+            "ev-007"
+          ]
+        },
+        {
+          "id": "test-003",
+          "title": "Artifact detector pass: render_artifact_count <= 0count",
+          "kind": "integration",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "EG-G11 --realized-by--> KR-G11b --verified-by--> TP-G11-2. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given video recorded from scripted gameplay segments, when every frame runs through the artifact detectors (placeholder-texture palette, flicker, NaN-color), then zero artifacts may be reported."
+          },
+          "budget": {
+            "metric": "render_artifact_count",
+            "threshold": 0,
+            "unit": "count"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-005"
+          ]
+        },
+        {
+          "id": "test-004",
+          "title": "HUD legibility scan: hud_legibility_failures <= 0count",
+          "kind": "e2e",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "EG-G11 --realized-by--> KR-G11c --verified-by--> TP-G11-3. This budget is a proposal from the experience goal catalog, not a caller decision; confirm or replace the number.",
+          "draft": {
+            "description": "Given screenshots captured at each supported resolution and aspect ratio, when declared HUD elements are located and text is OCR-verified, then every element must be present and legible."
+          },
+          "budget": {
+            "metric": "hud_legibility_failures",
+            "threshold": 0,
+            "unit": "count"
+          },
+          "proposedBudget": true,
+          "evidenceIds": [
+            "ev-006"
+          ]
+        },
+        {
+          "id": "test-005",
+          "title": "Boundary checks around the regressed area",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.5,
+          "rationale": "Regressions cluster; nearby boundaries of the same code path deserve checks.",
+          "draft": {
+            "description": "Given inputs adjacent to the regressed scenario, when they run, then behavior matches the pre-regression baseline."
+          },
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "test_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Bisect to the causing change",
+          "description": "Use the changed files and failure signal to locate which change introduced the regression.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Lock the behavior with tests, then correct",
+          "description": "The change surface is wide; add pinning tests around the regressed behavior before correcting.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Reverting or correcting the causing change may undo an intended improvement shipped with it."
+        }
+      ],
+      "rollback": "If the correction is risky, revert the causing change entirely and reland it with the pinning test."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested regression: The lighting rework must not visually break existing scenes."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain game."
+      },
+      {
+        "id": "ev-003",
+        "type": "runtime_signal",
+        "detail": "golden_image_diff on chapter 3 vista measured at 7.5% (capture-rig 1.4 / perceptual-diff 2.1)"
+      },
+      {
+        "id": "ev-004",
+        "type": "experience_goal",
+        "detail": "visual_fidelity budget: golden_image_diff <= 2%, proposed from the experience goal catalog (EG-G11 KR-G11a)."
+      },
+      {
+        "id": "ev-005",
+        "type": "experience_goal",
+        "detail": "visual_fidelity budget: render_artifact_count <= 0count, proposed from the experience goal catalog (EG-G11 KR-G11b)."
+      },
+      {
+        "id": "ev-006",
+        "type": "experience_goal",
+        "detail": "visual_fidelity budget: hud_legibility_failures <= 0count, proposed from the experience goal catalog (EG-G11 KR-G11c)."
+      },
+      {
+        "id": "ev-007",
+        "type": "budget_violation",
+        "detail": "golden_image_diff on chapter 3 vista measured 7.5%, exceeding the visual_fidelity budget of 2%."
+      }
+    ]
+  }
+}

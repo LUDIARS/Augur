@@ -75,6 +75,8 @@ type ExperienceGoal = {
     | "audio_visual_sync"         // EG-G08
     | "fairness_feel"             // EG-G09
     | "progression_integrity"     // EG-G10
+    | "visual_fidelity"           // EG-G11
+    | "content_rating_compliance" // EG-G12
     | "custom";
   description?: string;
   targets?: ExperienceTarget[];      // explicit budgets; when absent, Augur proposes defaults
@@ -132,7 +134,7 @@ type CoverageSignal = {
 };
 
 type RuntimeSignal = {
-  type: "web_response" | "api_latency" | "memory" | "cpu" | "custom";
+  type: "web_response" | "api_latency" | "memory" | "cpu" | "media_analysis" | "custom";
   name: string;
   value: number;
   unit: string;
@@ -140,6 +142,11 @@ type RuntimeSignal = {
   scope?: string;      // endpoint, flow, or area the measurement belongs to
   source?: string;
 };
+```
+
+`media_analysis` carries numeric results derived from captured screenshots or video by an external analyzer — for example a golden-image diff percentage or a count of frames flagged against a content rating tier. `name` holds the metric (matching the `ExperienceTarget.metric` it should be compared against), `scope` names the scene or segment the capture covers, and `source` identifies the capture harness and analyzer. The capture/analysis contract is defined in [Media-Based Testing](../feature/media-based-testing.md).
+
+```ts
 ```
 
 ## PlanResponse

@@ -1,0 +1,149 @@
+{
+  "request": {
+    "objective": {
+      "kind": "regression",
+      "description": "The new finisher move must keep the JP SKU within CERO B."
+    },
+    "project": {
+      "name": "action-title",
+      "domain": "game"
+    },
+    "experienceGoals": [
+      {
+        "quality": "content_rating_compliance",
+        "description": "CERO B for the JP SKU",
+        "targets": [
+          {
+            "metric": "rating_violation_count",
+            "threshold": 0,
+            "unit": "count"
+          }
+        ]
+      }
+    ],
+    "runtimeSignals": [
+      {
+        "type": "media_analysis",
+        "name": "rating_violation_count",
+        "value": 3,
+        "unit": "count",
+        "scope": "boss arena finisher",
+        "source": "capture-rig 1.4 / gore-classifier 0.9, reviewed by content team"
+      }
+    ]
+  },
+  "expected": {
+    "summary": "Lead with \"Performance guardrail: rating_violation_count <= 0count\" (critical), then write the failing test first, then fix. 3 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Performance guardrail: rating_violation_count <= 0count",
+          "kind": "performance",
+          "priority": "critical",
+          "confidence": 0.85,
+          "rationale": "A supplied measurement already exceeds this budget.",
+          "draft": {
+            "description": "Given the flow in scope, when rating_violation_count is measured externally, then it must stay within 0count."
+          },
+          "budget": {
+            "metric": "rating_violation_count",
+            "threshold": 0,
+            "unit": "count"
+          },
+          "evidenceIds": [
+            "ev-004",
+            "ev-005"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Narrow test around the failing behavior",
+          "kind": "regression",
+          "priority": "critical",
+          "confidence": 0.55,
+          "rationale": "Something that used to work broke; the first test should pin the exact failing behavior.",
+          "draft": {
+            "description": "Given the previously working scenario, when it runs against the current build, then the prior behavior must hold."
+          },
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "test-003",
+          "title": "Boundary checks around the regressed area",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.5,
+          "rationale": "Regressions cluster; nearby boundaries of the same code path deserve checks.",
+          "draft": {
+            "description": "Given inputs adjacent to the regressed scenario, when they run, then behavior matches the pre-regression baseline."
+          },
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "test_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Bisect to the causing change",
+          "description": "Use the changed files and failure signal to locate which change introduced the regression.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Lock the behavior with tests, then correct",
+          "description": "The change surface is wide; add pinning tests around the regressed behavior before correcting.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Reverting or correcting the causing change may undo an intended improvement shipped with it."
+        }
+      ],
+      "rollback": "If the correction is risky, revert the causing change entirely and reland it with the pinning test."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested regression: The new finisher move must keep the JP SKU within CERO B."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain game."
+      },
+      {
+        "id": "ev-003",
+        "type": "runtime_signal",
+        "detail": "rating_violation_count on boss arena finisher measured at 3count (capture-rig 1.4 / gore-classifier 0.9, reviewed by content team)"
+      },
+      {
+        "id": "ev-004",
+        "type": "experience_goal",
+        "detail": "content_rating_compliance budget: rating_violation_count <= 0count, set by the caller."
+      },
+      {
+        "id": "ev-005",
+        "type": "budget_violation",
+        "detail": "rating_violation_count on boss arena finisher measured 3count, exceeding the content_rating_compliance budget of 0count."
+      }
+    ]
+  }
+}
