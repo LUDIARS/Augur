@@ -2,7 +2,7 @@
 
 ## Status
 
-Roadmap Phases 0–2 are implemented: scaffolding, the core planning engine, and the HTTP API. Phases 3–5 (CLI, LLM assistance, persistence) are not started. See the [roadmap](../roadmap.md).
+Roadmap Phases 0–2 are implemented: scaffolding, the core planning engine, and the HTTP API. Phases 3–5 (CLI, LLM assistance, persistence) are designed but not implemented. See the [roadmap](../roadmap.md).
 
 ## Runtime
 
@@ -20,14 +20,13 @@ Expected tooling:
 
 No required environment variables are defined for the MVP.
 
-Future optional variables may include:
+Optional variables by phase:
 
-- `AUGUR_PORT`
-- `AUGUR_LOG_LEVEL`
-- `AUGUR_LLM_PROVIDER` (Phase 4 only, see [roadmap](../roadmap.md))
-- `AUGUR_LLM_API_KEY` (Phase 4 only)
+- `AUGUR_PORT`, `AUGUR_LOG_LEVEL` — server basics
+- `AUGUR_LLM_PROVIDER`, `AUGUR_LLM_API_KEY`, `AUGUR_LLM_MODEL`, `AUGUR_LLM_TIMEOUT_MS` — Phase 4, see [LLM Assistance](../feature/llm-assistance.md)
+- `AUGUR_DB_PATH`, `AUGUR_RETENTION_DAYS` — Phase 5, see [Plan Persistence](../data/persistence.md)
 
-The MVP planning engine is deterministic and requires no API keys. See the [Planning Engine](../feature/planning-engine.md) spec.
+The planning engine is deterministic and requires no API keys; every optional feature above is off when its variables are unset. See the [Planning Engine](../feature/planning-engine.md) spec.
 
 ## Local Commands
 

@@ -31,9 +31,10 @@ src/
     scoring/        # priority + confidence rules, confidence floor
     assemble/       # id assignment, evidence linking, summary generation
     createPlan.ts   # the pipeline: (CreatePlanRequest) => PlanResponse, pure
-  llm/              # Phase 4 only: provider abstraction, enrich.ts, proposeExemptions.ts
-  http/             # Fastify app: routes, zod -> 400 mapping, error envelope
-  cli/              # Phase 3 only
+  llm/              # Phase 4 only: provider abstraction, enrich.ts, proposeExemptions.ts (spec/feature/llm-assistance.md)
+  http/             # Fastify app: routes, zod -> 400 mapping, error envelope; stamps planId/createdAt when persistence is on
+  cli/              # Phase 3 only (spec/interface/cli.md)
+  store/            # Phase 5 only: PlanStore interface, sqlite + memory implementations (spec/data/persistence.md)
 test/
   unit/             # engine internals per module
   golden/           # cases/*.json request/response pairs
@@ -158,20 +159,24 @@ Proposal labeling is forced by construction: `proposeExemptions` stamps `propose
 - **API tests**: Fastify's `inject()` (in-process, no port) keeps them fast and CI-friendly.
 - **Catalog consistency tests**: as described under Catalog entries.
 
-## Open Decisions
+## Resolved Decisions
 
-Deferred until their phase starts, with the current lean noted:
+Formerly open; each is now specified in its phase design:
 
-- Diff parsing depth (Phase 1): start with file-level granularity; hunk-level only if a rule needs it.
-- CLI signal gathering (Phase 3): shell out to `git` from the CLI layer only — the engine still receives data, never runs commands.
-- LLM provider set (Phase 4): start with a single provider behind `LlmProvider`; the interface is the commitment, not the vendor.
+- Diff parsing depth (Phase 1): file-level granularity, implemented; hunk-level only if a rule needs it.
+- CLI signal gathering (Phase 3): flags, gathering behavior, and exit codes are defined in the [CLI](./interface/cli.md) spec; only the CLI layer shells out to `git`.
+- LLM assistance (Phase 4): provider abstraction, role contracts, failure handling, and privacy rules are defined in [LLM Assistance](./feature/llm-assistance.md); single provider first, the interface is the commitment.
+- Persistence (Phase 5): `PlanStore` interface, `PlanRecord` shape, id stamping in the HTTP layer, and retention are defined in [Plan Persistence](./data/persistence.md).
 
 ## Related Specs
 
 - [Core Data Schema](./data/core-schema.md)
 - [Experience Goal Catalog](./data/experience-goal-catalog.md)
+- [Plan Persistence](./data/persistence.md)
 - [Planning Engine](./feature/planning-engine.md)
 - [Experience-Driven Constraints](./feature/experience-driven-constraints.md)
+- [LLM Assistance](./feature/llm-assistance.md)
 - [HTTP API](./interface/http-api.md)
+- [CLI](./interface/cli.md)
 - [Service Test Strategy](./test/service-test-strategy.md)
 - [Roadmap](./roadmap.md)
