@@ -1,0 +1,152 @@
+{
+  "request": {
+    "objective": {
+      "kind": "new_feature",
+      "description": "Add CSV export to the reports page.",
+      "desiredOutcome": "Users can download the current report as CSV."
+    },
+    "project": {
+      "name": "example-web",
+      "domain": "web",
+      "language": "typescript",
+      "frameworks": [
+        "react"
+      ],
+      "testRunners": [
+        "vitest"
+      ]
+    },
+    "change": {
+      "changedFiles": [
+        "src/reports/export.ts",
+        "src/reports/export.test.ts"
+      ]
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Happy path: Add CSV export to the reports page.\" (high), then write the failing test first, then fix. 3 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Happy path: Add CSV export to the reports page.",
+          "kind": "unit",
+          "priority": "high",
+          "confidence": 0.75,
+          "targetFiles": [
+            "src/reports/export.test.ts"
+          ],
+          "rationale": "A new feature needs its primary flow verified before anything else.",
+          "draft": {
+            "framework": "vitest",
+            "description": "Given valid inputs, when the feature runs, then it produces the intended outcome (Users can download the current report as CSV.)."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Edge cases and invalid inputs",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.65,
+          "targetFiles": [
+            "src/reports/export.test.ts"
+          ],
+          "rationale": "Boundary and invalid-input behavior is where new features usually break.",
+          "draft": {
+            "framework": "vitest",
+            "description": "Given boundary and invalid inputs, when the feature runs, then it fails safely with the documented behavior."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004"
+          ]
+        },
+        {
+          "id": "test-003",
+          "title": "Contract with consumers of the new surface",
+          "kind": "contract",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "Whatever the feature exposes (API, events, props) should be pinned as a contract.",
+          "draft": {
+            "framework": "vitest",
+            "description": "Given the exposed surface of the feature, when consumers use it as documented, then the shape and semantics hold."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "test_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Write the happy-path test first",
+          "description": "Encode the desired outcome as a failing test, then implement until it passes.",
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Implement the feature minimally",
+          "description": "Build the smallest implementation that satisfies the tests, then extend edge-case coverage.",
+          "targetFiles": [
+            "src/reports/export.ts"
+          ],
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "low",
+          "description": "New surfaces tend to grow; keeping the initial contract small reduces later breaking changes."
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested new feature: Add CSV export to the reports page."
+      },
+      {
+        "id": "ev-002",
+        "type": "project_metadata",
+        "detail": "Project context: domain web; frameworks react; test runners vitest."
+      },
+      {
+        "id": "ev-003",
+        "type": "changed_file",
+        "file": "src/reports/export.ts",
+        "detail": "Changed file: src/reports/export.ts"
+      },
+      {
+        "id": "ev-004",
+        "type": "changed_file",
+        "file": "src/reports/export.test.ts",
+        "detail": "Changed file: src/reports/export.test.ts"
+      }
+    ]
+  }
+}

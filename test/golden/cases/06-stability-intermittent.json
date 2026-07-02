@@ -1,0 +1,95 @@
+{
+  "request": {
+    "objective": {
+      "kind": "stability",
+      "description": "Checkout e2e suite fails intermittently in CI."
+    },
+    "failure": {
+      "command": "npm run test:e2e",
+      "exitCode": 1,
+      "stderr": "TimeoutError: waiting for selector .confirm (3 of 20 runs)"
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Repeat-run flakiness check on the affected flow\" (high), then investigate before changing code. 2 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Repeat-run flakiness check on the affected flow",
+          "kind": "flaky",
+          "priority": "high",
+          "confidence": 0.75,
+          "rationale": "Intermittent behavior only shows under repetition; N consecutive runs expose the flake rate.",
+          "draft": {
+            "description": "Given the affected flow, when it is executed N times consecutively by the external runner, then all runs must pass."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-002"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Nondeterminism audit (time, ordering, shared state)",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.55,
+          "rationale": "Flaky behavior usually traces to clocks, unordered collections, races, or leaked state between tests.",
+          "draft": {
+            "description": "Given the suspected code paths, when time, ordering, and shared state are controlled, then results are identical across runs."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-002"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Make the failure reproducible first",
+          "description": "Capture seeds, timing, and environment until the failure reproduces deterministically.",
+          "evidenceIds": [
+            "ev-001",
+            "ev-002"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Then remove the source of nondeterminism",
+          "description": "With a deterministic reproduction in hand, apply a minimal fix and keep the repeat-run guard.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-002"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Retry-based mitigation hides flakes instead of fixing them; prefer removing the nondeterminism."
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested stability: Checkout e2e suite fails intermittently in CI."
+      },
+      {
+        "id": "ev-002",
+        "type": "failure_log",
+        "detail": "npm run test:e2e exited with code 1: TimeoutError: waiting for selector .confirm (3 of 20 runs)"
+      }
+    ]
+  }
+}

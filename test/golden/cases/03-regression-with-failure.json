@@ -1,0 +1,127 @@
+{
+  "request": {
+    "objective": {
+      "kind": "regression",
+      "description": "Sorting by price broke after the pagination change."
+    },
+    "change": {
+      "changedFiles": [
+        "src/list/pagination.ts"
+      ]
+    },
+    "failure": {
+      "command": "npm run test",
+      "exitCode": 1,
+      "stderr": "AssertionError: expected items to be sorted",
+      "stackTrace": "AssertionError\n    at sortSpec (src/list/sort.test.ts:42:5)"
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Narrow test around the failing behavior\" (critical), then apply a minimal, narrowly scoped fix. 2 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Narrow test around the failing behavior",
+          "kind": "regression",
+          "priority": "critical",
+          "confidence": 0.9,
+          "rationale": "Something that used to work broke; the first test should pin the exact failing behavior.",
+          "draft": {
+            "description": "Given the previously working scenario, when it runs against the current build, then the prior behavior must hold."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004",
+            "ev-002"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Boundary checks around the regressed area",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.6,
+          "targetFiles": [
+            "src/list/pagination.ts"
+          ],
+          "rationale": "Regressions cluster; nearby boundaries of the same code path deserve checks.",
+          "draft": {
+            "description": "Given inputs adjacent to the regressed scenario, when they run, then behavior matches the pre-regression baseline."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004",
+            "ev-002"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "minimal",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Bisect to the causing change",
+          "description": "Use the changed files and failure signal to locate which change introduced the regression.",
+          "targetFiles": [
+            "src/list/pagination.ts"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004",
+            "ev-002"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Apply a minimal correction",
+          "description": "The blast radius is small; correct the causing change directly and keep the pinning test.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-003",
+            "ev-004",
+            "ev-002"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Reverting or correcting the causing change may undo an intended improvement shipped with it."
+        }
+      ],
+      "rollback": "If the correction is risky, revert the causing change entirely and reland it with the pinning test."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested regression: Sorting by price broke after the pagination change."
+      },
+      {
+        "id": "ev-002",
+        "type": "changed_file",
+        "file": "src/list/pagination.ts",
+        "detail": "Changed file: src/list/pagination.ts"
+      },
+      {
+        "id": "ev-003",
+        "type": "failure_log",
+        "detail": "npm run test exited with code 1: AssertionError: expected items to be sorted"
+      },
+      {
+        "id": "ev-004",
+        "type": "stack_trace",
+        "detail": "Stack trace supplied; top frame at sortSpec (src/list/sort.test.ts:42:5)"
+      }
+    ]
+  }
+}

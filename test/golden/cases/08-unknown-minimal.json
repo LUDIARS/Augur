@@ -1,0 +1,72 @@
+{
+  "request": {
+    "objective": {
+      "kind": "unknown",
+      "description": "Something is off with the notifications lately."
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Characterize current behavior around the available evidence\" (medium), then investigate before changing code. 1 test suggestion, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Characterize current behavior around the available evidence",
+          "kind": "unit",
+          "priority": "medium",
+          "confidence": 0.4,
+          "rationale": "The objective kind is unknown; tests that pin what the evidence shows create a safe base for whatever comes next.",
+          "draft": {
+            "description": "Given the flows touched by the supplied signals, when they run, then current behavior is recorded as the baseline."
+          },
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "investigate_first",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Clarify the objective",
+          "description": "Determine whether this is a bug, feature, refactor, or performance concern; the plan differs for each.",
+          "evidenceIds": [
+            "ev-001"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Gather the missing signal",
+          "description": "Collect the diff, failure log, or measurement that the clarified objective needs.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "low",
+          "description": "Acting before the objective is clear risks solving the wrong problem; prefer reversible steps."
+        },
+        {
+          "id": "risk-002",
+          "severity": "low",
+          "description": "Evidence is weak across the whole plan; prefer reversible steps until stronger signals exist."
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested unknown: Something is off with the notifications lately."
+      }
+    ]
+  }
+}

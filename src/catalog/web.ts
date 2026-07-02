@@ -1,0 +1,148 @@
+import type { CatalogEntry } from './types.ts';
+
+export const webEntries: CatalogEntry[] = [
+  {
+    id: 'EG-W01',
+    quality: 'freshness',
+    domain: 'web',
+    feel: 'what I see is up to date, no stale results',
+    objective: 'The screen never shows the user a lie about current state.',
+    keyResults: [
+      { id: 'KR-W01a', target: { metric: 'staleness_after_mutation', threshold: 1000, unit: 'ms' }, note: 'a user’s own change is visible within the budget' },
+      { id: 'KR-W01b', target: { metric: 'missing_invalidation_count', threshold: 0, unit: 'count' }, note: 'cache invalidation fires on every mutation affecting displayed data' },
+      { id: 'KR-W01c', target: { metric: 'residual_results_after_reset', threshold: 0, unit: 'count' }, note: 'cleared or reset inputs never leave residual results' },
+    ],
+    patterns: [
+      {
+        id: 'TP-W01-1',
+        kind: 'integration',
+        title: 'Read-your-own-write',
+        draft: 'Given the user mutates data, when the affected view re-renders, then the new value is visible within the budget.',
+        verifiesKeyResults: ['KR-W01a'],
+      },
+      {
+        id: 'TP-W01-2',
+        kind: 'regression',
+        title: 'Stale-reset regression',
+        draft: 'Given results are displayed, when the query or filter is cleared, then displayed results reset instead of persisting.',
+        verifiesKeyResults: ['KR-W01c'],
+      },
+      {
+        id: 'TP-W01-3',
+        kind: 'contract',
+        title: 'Invalidation contract',
+        draft: 'Given each mutation in the API surface, when enumerated, then each must declare which cached views it invalidates.',
+        verifiesKeyResults: ['KR-W01b'],
+      },
+    ],
+    typicalExemptions: ['dashboards with declared refresh intervals', 'eventually-consistent views that display their own timestamp'],
+  },
+  {
+    id: 'EG-W02',
+    quality: 'seamless_navigation',
+    domain: 'web',
+    feel: 'pages change without a lurch, the back button just works',
+    objective: 'Moving through the site never breaks flow or context.',
+    keyResults: [
+      { id: 'KR-W02a', target: { metric: 'route_transition', threshold: 300, unit: 'ms' }, note: 'or a skeleton/placeholder within 100ms' },
+      { id: 'KR-W02b', target: { metric: 'history_breakage_count', threshold: 0, unit: 'count' }, note: 'back/forward restores the prior view and scroll position' },
+      { id: 'KR-W02c', target: { metric: 'broken_deep_link_count', threshold: 0, unit: 'count' }, note: 'deep links land on the addressed content' },
+    ],
+    patterns: [
+      {
+        id: 'TP-W02-1',
+        kind: 'e2e',
+        title: 'Transition timing',
+        draft: 'Given the app is loaded, when navigating between key routes, then the next view (or its skeleton) must render within the budget.',
+        verifiesKeyResults: ['KR-W02a'],
+      },
+      {
+        id: 'TP-W02-2',
+        kind: 'e2e',
+        title: 'History contract',
+        draft: 'Given a navigation sequence, when the user presses back, then the previous view and scroll position are restored.',
+        verifiesKeyResults: ['KR-W02b'],
+      },
+      {
+        id: 'TP-W02-3',
+        kind: 'integration',
+        title: 'Deep-link check',
+        draft: 'Given each representative deep link opened cold, when the page renders, then the addressed content is present.',
+        verifiesKeyResults: ['KR-W02c'],
+      },
+    ],
+    typicalExemptions: ['cross-origin exits', 'downloads', 'explicitly full-reload flows'],
+  },
+  {
+    id: 'EG-W03',
+    quality: 'cross_browser_consistency',
+    domain: 'web',
+    feel: 'works the same in Safari, mobile is not a downgrade',
+    objective: 'The experience holds across the supported browser and device matrix.',
+    keyResults: [
+      { id: 'KR-W03a', target: { metric: 'matrix_flow_failures', threshold: 0, unit: 'count' }, note: 'critical flows pass on every supported browser/device profile' },
+      { id: 'KR-W03b', target: { metric: 'visual_divergence', threshold: 1, unit: '%' }, note: 'across browsers for key screens' },
+      { id: 'KR-W03c', target: { metric: 'touch_parity_gap_count', threshold: 0, unit: 'count' }, note: 'every pointer interaction has a touch equivalent with the same outcome' },
+    ],
+    patterns: [
+      {
+        id: 'TP-W03-1',
+        kind: 'e2e',
+        title: 'Matrix flow run',
+        draft: 'Given the critical flows, when they run on each supported browser/device profile, then all must pass on all profiles.',
+        verifiesKeyResults: ['KR-W03a'],
+      },
+      {
+        id: 'TP-W03-2',
+        kind: 'regression',
+        title: 'Visual regression sweep',
+        draft: 'Given key screens captured per browser, when screenshots are diffed against baselines, then divergence must stay within tolerance.',
+        verifiesKeyResults: ['KR-W03b'],
+      },
+      {
+        id: 'TP-W03-3',
+        kind: 'e2e',
+        title: 'Touch parity check',
+        draft: 'Given each pointer interaction, when driven via touch emulation, then the outcome must match the pointer outcome.',
+        verifiesKeyResults: ['KR-W03c'],
+      },
+    ],
+    typicalExemptions: ['browsers below the supported baseline', 'declared progressive-enhancement gaps'],
+  },
+  {
+    id: 'EG-W04',
+    quality: 'shareability',
+    domain: 'web',
+    feel: 'I can just send the link, the link opens exactly what I was seeing',
+    objective: 'What the user sees can be handed to someone else as a URL.',
+    keyResults: [
+      { id: 'KR-W04a', target: { metric: 'url_state_roundtrip_failures', threshold: 0, unit: 'count' }, note: 'visible state is encoded in the URL and restores on open' },
+      { id: 'KR-W04b', target: { metric: 'missing_share_metadata_count', threshold: 0, unit: 'count' }, note: 'shared links render correct title, description, image metadata' },
+      { id: 'KR-W04c', target: { metric: 'dead_end_landing_count', threshold: 0, unit: 'count' }, note: 'no-access landings show a useful request path' },
+    ],
+    patterns: [
+      {
+        id: 'TP-W04-1',
+        kind: 'e2e',
+        title: 'Round-trip test',
+        draft: 'Given manipulated view state, when its URL is opened in a fresh session, then the identical view must render.',
+        verifiesKeyResults: ['KR-W04a'],
+      },
+      {
+        id: 'TP-W04-2',
+        kind: 'contract',
+        title: 'Preview metadata contract',
+        draft: 'Given representative shareable URLs, when share metadata is fetched, then required tags must be present and accurate.',
+        verifiesKeyResults: ['KR-W04b'],
+      },
+      {
+        id: 'TP-W04-3',
+        kind: 'e2e',
+        title: 'No-access landing',
+        draft: 'Given a shared link opened by an unauthorized user, when the page renders, then a request-access path must be shown.',
+        verifiesKeyResults: ['KR-W04c'],
+      },
+    ],
+    typicalExemptions: ['private or ephemeral views by design (drafts, admin panels)'],
+  },
+];

@@ -1,0 +1,129 @@
+{
+  "request": {
+    "objective": {
+      "kind": "refactor",
+      "description": "Extract pricing rules into a standalone module."
+    },
+    "change": {
+      "changedFiles": [
+        "src/pricing.ts",
+        "src/cart.ts",
+        "src/checkout.ts"
+      ]
+    }
+  },
+  "expected": {
+    "summary": "Lead with \"Behavior-preserving characterization tests\" (high), then refactor in behavior-preserving steps. 2 test suggestions, 2 fix steps.",
+    "testPlan": {
+      "suggestions": [
+        {
+          "id": "test-001",
+          "title": "Behavior-preserving characterization tests",
+          "kind": "unit",
+          "priority": "high",
+          "confidence": 0.75,
+          "targetFiles": [
+            "src/pricing.ts",
+            "src/cart.ts",
+            "src/checkout.ts"
+          ],
+          "rationale": "A refactor must not change behavior; characterization tests pin the current behavior before code moves.",
+          "draft": {
+            "description": "Given the current observable behavior of the refactored area, when the refactored code runs, then outputs match the pre-refactor baseline exactly."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-002",
+            "ev-003",
+            "ev-004"
+          ]
+        },
+        {
+          "id": "test-002",
+          "title": "Existing contract checks stay green",
+          "kind": "contract",
+          "priority": "high",
+          "confidence": 0.65,
+          "rationale": "Consumers of the refactored surface must see no difference.",
+          "draft": {
+            "description": "Given the public surface of the refactored modules, when existing contract tests run, then all pass unchanged."
+          },
+          "evidenceIds": [
+            "ev-001",
+            "ev-002",
+            "ev-003",
+            "ev-004"
+          ]
+        }
+      ]
+    },
+    "fixPolicy": {
+      "strategy": "behavior_preserving",
+      "steps": [
+        {
+          "id": "fix-001",
+          "title": "Pin current behavior",
+          "description": "Add or verify characterization tests over the code to be moved before changing structure.",
+          "targetFiles": [
+            "src/pricing.ts",
+            "src/cart.ts",
+            "src/checkout.ts"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-002",
+            "ev-003",
+            "ev-004"
+          ]
+        },
+        {
+          "id": "fix-002",
+          "title": "Refactor in reviewable steps",
+          "description": "Restructure in small, individually green steps; never combine behavior changes with structure changes.",
+          "dependsOn": [
+            "fix-001"
+          ],
+          "evidenceIds": [
+            "ev-001",
+            "ev-002",
+            "ev-003",
+            "ev-004"
+          ]
+        }
+      ],
+      "risks": [
+        {
+          "id": "risk-001",
+          "severity": "medium",
+          "description": "Uncovered behavior in the refactored area can change silently; coverage gaps are the main refactor risk."
+        }
+      ],
+      "rollback": "Each refactor step is independently revertible; revert the latest step on any behavioral difference."
+    },
+    "evidence": [
+      {
+        "id": "ev-001",
+        "type": "objective",
+        "detail": "Caller requested refactor: Extract pricing rules into a standalone module."
+      },
+      {
+        "id": "ev-002",
+        "type": "changed_file",
+        "file": "src/pricing.ts",
+        "detail": "Changed file: src/pricing.ts"
+      },
+      {
+        "id": "ev-003",
+        "type": "changed_file",
+        "file": "src/cart.ts",
+        "detail": "Changed file: src/cart.ts"
+      },
+      {
+        "id": "ev-004",
+        "type": "changed_file",
+        "file": "src/checkout.ts",
+        "detail": "Changed file: src/checkout.ts"
+      }
+    ]
+  }
+}

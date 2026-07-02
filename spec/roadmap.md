@@ -4,6 +4,8 @@ This document defines the order of implementation for Augur and the acceptance b
 
 Technology choices, module layout, and internal interfaces for these phases are defined in the [Implementation Design](./implementation-design.md).
 
+Status: Phases 0–2 are implemented; Phases 3–5 are not started.
+
 ## Phase 0 — Project Scaffolding
 
 Scope:
