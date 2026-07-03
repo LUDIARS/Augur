@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 // Safety guarantees from spec/test/service-test-strategy.md: Augur never
@@ -27,7 +28,7 @@ function walk(dir: string): string[] {
 }
 
 describe('engine purity', () => {
-  const root = new URL('../..', import.meta.url).pathname;
+  const root = fileURLToPath(new URL('../..', import.meta.url));
 
   for (const dir of PURE_DIRS) {
     it(`${dir} never imports process, filesystem, or network APIs`, () => {
