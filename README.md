@@ -8,6 +8,8 @@ The flagship use case is experience-driven constraints: a caller states how the 
 
 For games, the same machinery plans screenshot- and video-based tests: an external capture harness records scripted play, frame analyzers reduce the footage to numbers (golden-image diffs, render artifacts, frames flagged against a content rating tier such as CERO for violence or blood expression), and Augur turns those numbers into budgets, violations, and guardrail test suggestions. See [spec/feature/media-based-testing.md](./spec/feature/media-based-testing.md).
 
+Augur also manages fleet-wide **log injection**: a repo-local tool (`npm run inject`) that scans LUDIARS projects for known stability seams (bare catches, unwatched spawns, unguarded async intervals/listeners) and injects marker-tagged observation calls that emit through `@ludiars/log-weaver` to Vestigium JSONL — turning operation-time logs into the runtime signals that drive automatic repair of small stop bugs. See [spec/feature/log-injection.md](./spec/feature/log-injection.md) and [spec/interface/inject-cli.md](./spec/interface/inject-cli.md).
+
 Specifications are managed under [spec/](./spec/) using the AIFormat category folders:
 
 - `data/`
