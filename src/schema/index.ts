@@ -221,6 +221,11 @@ export const evidenceSchema = z.object({
 });
 
 export const planResponseSchema = z.object({
+  // Stamped by the HTTP layer only when persistence is enabled (Phase 5);
+  // absent responses stay byte-identical to stateless behavior
+  // (spec/data/core-schema.md "PlanResponse").
+  planId: z.string().optional(),
+  createdAt: z.string().optional(),
   summary: z.string(),
   testPlan: testPlanSchema,
   fixPolicy: fixPolicySchema,

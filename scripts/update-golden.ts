@@ -1,11 +1,13 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createPlan } from '../src/engine/createPlan.ts';
 
 // Regenerates golden expectations. Explicit by design — never run
 // automatically (spec/implementation-design.md, "Test Implementation Notes").
 
-const casesDir = new URL('../test/golden/cases', import.meta.url).pathname;
+// fileURLToPath, not URL#pathname: pathname yields "/E:/..." on Windows.
+const casesDir = fileURLToPath(new URL('../test/golden/cases', import.meta.url));
 
 for (const name of readdirSync(casesDir).filter((file) => file.endsWith('.json')).sort()) {
   const path = join(casesDir, name);

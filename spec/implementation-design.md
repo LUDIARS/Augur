@@ -9,7 +9,7 @@ This document defines how the specs translate into code: technology choices, mod
 | Runtime | Node.js (current LTS) | matches [Local Development Setup](./setup/local-development.md) |
 | Language | TypeScript, `strict` mode | schema-heavy domain; the type system carries the spec |
 | Schema validation | Zod schemas as the single source of truth; TS types inferred from them | one definition serves validation (HTTP 400s) and typing |
-| HTTP server | Fastify | schema-first validation hooks, small surface |
+| HTTP server | Hono + @hono/node-server | LUDIARS org-standard stack (Excubitor / Ludellus-Server と同系), small surface; see `spec/design.md` I-1 |
 | Test runner | Vitest | per [Service Test Strategy](./test/service-test-strategy.md) |
 | Logging | pino, silent by default in the engine | the engine itself stays pure |
 
@@ -17,32 +17,37 @@ This document defines how the specs translate into code: technology choices, mod
 
 ```text
 src/
+  server.ts         # entry: config load, pino logger, loopback serve (bootstrap only)
+  app.ts            # Hono app assembly: route registration + onError -> 500 envelope
+  config/           # augur.config.json loader with AUGUR_PORT / AUGUR_LOG_LEVEL overrides (fail-fast on invalid values)
+  routes/           # HTTP boundary: zod -> 400 mapping per route; stamps planId/createdAt when persistence is on
   schema/           # Zod schemas mirroring spec/data/core-schema.md, one export per type
   catalog/          # experience goal catalog as data
     common.ts       #   EG-Cxx entries
     web.ts          #   EG-Wxx entries
     game.ts         #   EG-Gxx entries
     index.ts        #   lookup by quality, domain filtering
-  engine/
-    normalize/      # one parser per signal: diff.ts, failure.ts, coverage.ts, runtime.ts
-    experience/     # goal resolution, exemption application, budget comparison
-    evidence/       # facts -> Evidence[], stable ordering and ids
+  engine/           # one module per pipeline stage, single files while each stays single-responsibility
+    normalize.ts    # signal parsing: diff, failure, coverage, runtime (includes budget resolution)
+    experience.ts   # goal resolution, exemption application, budget comparison
+    experienceSuggestions.ts  # budget guardrail suggestions
+    evidence.ts     # facts -> Evidence[], stable ordering and ids
     rules/          # one module per objective kind: bugFix.ts, refactor.ts, ...
-    scoring/        # priority + confidence rules, confidence floor
-    assemble/       # id assignment, evidence linking, summary generation
+    scoring.ts      # priority + confidence rules, confidence floor
+    assemble.ts     # id assignment, evidence linking, summary generation
     createPlan.ts   # the pipeline: (CreatePlanRequest) => PlanResponse, pure
+  inject/           # log injection framework (spec/feature/log-injection.md), CLI-only, not part of the HTTP service
   llm/              # Phase 4 only: provider abstraction, enrich.ts, proposeExemptions.ts (spec/feature/llm-assistance.md)
-  http/             # Fastify app: routes, zod -> 400 mapping, error envelope; stamps planId/createdAt when persistence is on
   cli/              # Phase 3 only (spec/interface/cli.md)
   store/            # Phase 5 only: PlanStore interface, sqlite + memory implementations (spec/data/persistence.md)
 test/
-  unit/             # engine internals per module
+  unit/             # engine internals per module, config loader
   golden/           # cases/*.json request/response pairs
-  api/              # HTTP-level tests against an in-process server
-  safety/           # no-exec, no-fs-mutation guarantees
+  api/              # HTTP-level tests against the in-process Hono app
+  safety/           # no-exec, no-fs-mutation guarantees (engine purity + shell no-spawn)
 ```
 
-Dependency direction is one-way: `http`/`cli` → `engine` → `catalog`/`schema`. The engine imports nothing from `http`, `cli`, or `llm`; LLM assistance plugs in through interfaces defined by the engine (see below).
+Dependency direction is one-way: `routes`/`cli` → `engine` → `catalog`/`schema`. The engine imports nothing from `routes`, `cli`, or `llm`; LLM assistance plugs in through interfaces defined by the engine (see below). This layout is mirrored by `spec/design.md` I-3; update both together.
 
 ## Key Interfaces
 
@@ -128,7 +133,7 @@ The [Experience Goal Catalog](./data/experience-goal-catalog.md) is the spec; `s
 
 ## HTTP Layer
 
-- One Fastify route per endpoint in [HTTP API](./interface/http-api.md); handlers do parse → `createPlan` → serialize, nothing else.
+- One Hono route per endpoint in [HTTP API](./interface/http-api.md); handlers do parse → `createPlan` → serialize, nothing else.
 - Zod parse failures map to the documented `400` envelope with the first issue path in the message (`"objective.description is required"`).
 - Unexpected exceptions map to the `500` envelope; the error is logged, the response body never leaks internals.
 - The server holds no state between requests (MVP has no persistence — [roadmap](./roadmap.md) Phase 5 revisits this).
@@ -156,7 +161,7 @@ Proposal labeling is forced by construction: `proposeExemptions` stamps `propose
 
 - **Golden tests**: each case is a directory-free pair `test/golden/cases/<name>.json` holding `{ request, expected }`. The test runs `createPlan(request)` and deep-equals against `expected`. Regenerating expectations is an explicit script (`npm run golden:update`), never automatic.
 - **Safety tests**: `child_process` and `fs` write methods are stubbed with throwing spies for the whole engine test suite — any engine code path that shells out or writes fails loudly. This implements the "never invokes test runner commands" constraint as a test, not a convention.
-- **API tests**: Fastify's `inject()` (in-process, no port) keeps them fast and CI-friendly.
+- **API tests**: Hono's `app.request()` (in-process, no port) keeps them fast and CI-friendly.
 - **Catalog consistency tests**: as described under Catalog entries.
 
 ## Resolved Decisions
