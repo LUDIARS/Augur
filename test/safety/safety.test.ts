@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 // Safety guarantees from spec/test/service-test-strategy.md: Augur never
@@ -26,9 +27,11 @@ function walk(dir: string): string[] {
   return results;
 }
 
-describe('engine purity', () => {
-  const root = new URL('../..', import.meta.url).pathname;
+// fileURLToPath, not URL#pathname: pathname yields "/E:/..." on Windows and
+// doubles the drive letter when joined.
+const root = fileURLToPath(new URL('../..', import.meta.url));
 
+describe('engine purity', () => {
   for (const dir of PURE_DIRS) {
     it(`${dir} never imports process, filesystem, or network APIs`, () => {
       const files = walk(join(root, dir));
@@ -36,6 +39,28 @@ describe('engine purity', () => {
       for (const file of files) {
         const source = readFileSync(file, 'utf8');
         for (const pattern of FORBIDDEN) {
+          expect(source, `${file} matches forbidden pattern ${pattern}`).not.toMatch(pattern);
+        }
+      }
+    });
+  }
+});
+
+// The HTTP shell legitimately reads config and binds a socket, but it must
+// never launch test runners or any other process on the caller's behalf
+// (spec/test/service-test-strategy.md ST-001).
+const SHELL_TARGETS = ['src/routes', 'src/config', 'src/app.ts', 'src/server.ts'];
+const NO_EXEC = [/child_process/, /\bworker_threads\b/, /\bexecSync\s*\(/, /\bspawnSync\s*\(/];
+
+describe('http shell never executes processes', () => {
+  for (const target of SHELL_TARGETS) {
+    it(`${target} never references process-spawning APIs`, () => {
+      const path = join(root, target);
+      const files = statSync(path).isDirectory() ? walk(path) : [path];
+      expect(files.length).toBeGreaterThan(0);
+      for (const file of files) {
+        const source = readFileSync(file, 'utf8');
+        for (const pattern of NO_EXEC) {
           expect(source, `${file} matches forbidden pattern ${pattern}`).not.toMatch(pattern);
         }
       }
