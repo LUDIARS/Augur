@@ -69,4 +69,21 @@ describe('POST /v1/plans', () => {
       error: { code: 'invalid_request', message: 'Request body must be valid JSON' },
     });
   });
+
+  it('validates focused-testing domains at the HTTP boundary', async () => {
+    const domain = {
+      domain: 'player-actions',
+      priority: 'critical',
+      risks: ['boundary'],
+      targets: [{ symbol: 'applyInput', file: 'src/player.cpp', line: 10, variables: [] }],
+    };
+    const response = await postPlans(JSON.stringify({
+      objective: { kind: 'regression', description: 'Protect player actions.' },
+      focusedTesting: { source: 'anatomia', domains: [domain, domain] },
+    }));
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe('invalid_request');
+    expect(body.error.message).toContain('focusedTesting.domains.1.domain');
+  });
 });

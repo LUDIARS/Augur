@@ -4,6 +4,7 @@ import type {
   ExperienceExemption,
   ExperienceQuality,
   ExperienceTarget,
+  FocusedDomain,
   FixStrategy,
   Objective,
   PlanningConstraint,
@@ -56,6 +57,7 @@ export type NormalizedFacts = {
   exemptionConflicts: ExemptionConflict[];
   unquantifiedCustomGoals: number;
   constraints: PlanningConstraint[];
+  focusedDomains: FocusedDomain[];
   conflictingSignals: string[]; // human descriptions of contradictory inputs
   frameworks: string[];
   testRunners: string[];
@@ -74,6 +76,7 @@ export type EvidenceRefs = {
   budgetIds: Map<ResolvedBudget, string>;
   exemptionIds: Map<ExperienceExemption, string>;
   violationIds: Map<RuntimeSignal, string>;
+  focusedDomainIds: Map<FocusedDomain, string>;
 };
 
 export type CandidateSuggestion = {

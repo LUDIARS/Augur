@@ -1,9 +1,9 @@
-import type { Evidence, ExperienceExemption, RuntimeSignal } from '../schema/index.ts';
+import type { Evidence, ExperienceExemption, FocusedDomain, RuntimeSignal } from '../schema/index.ts';
 import type { EvidenceRefs, NormalizedFacts, ResolvedBudget } from './types.ts';
 
 // Stage 3 of the pipeline: every downstream suggestion, fix step, and risk
 // must trace back to entries created here. Ordering is fixed
-// (spec/implementation-design.md): objective -> project -> change -> failure
+// (spec/implementation-design.md): objective -> project -> focused domains -> change -> failure
 // -> coverage -> runtime -> experience goals -> exemptions -> violations.
 
 function firstLine(text: string | undefined): string {
@@ -44,6 +44,21 @@ export function extractEvidence(facts: NormalizedFacts): EvidenceRefs {
     if (facts.frameworks.length > 0) parts.push(`frameworks ${facts.frameworks.join(', ')}`);
     if (facts.testRunners.length > 0) parts.push(`test runners ${facts.testRunners.join(', ')}`);
     projectId = push({ type: 'project_metadata', detail: `Project context: ${parts.join('; ')}.` });
+  }
+
+  const focusedDomainIds = new Map<FocusedDomain, string>();
+  for (const domain of facts.focusedDomains) {
+    const variables = domain.targets.flatMap((target) => target.variables);
+    const variableDetail = variables.length > 0
+      ? ` Important variables: ${variables.map((variable) => `${variable.name} (${variable.priority})`).join(', ')}.`
+      : '';
+    focusedDomainIds.set(
+      domain,
+      push({
+        type: 'focused_test_focus',
+        detail: `Anatomia focused domain "${domain.domain}" at ${domain.priority} priority with risks ${domain.risks.join(', ')}${domain.inferredRisks !== undefined ? ' (mechanically inferred)' : ' (caller-selected)'} across ${domain.targets.length} analyzed target(s).${variableDetail}`,
+      }),
+    );
   }
 
   let diffId: string | undefined;
@@ -148,5 +163,6 @@ export function extractEvidence(facts: NormalizedFacts): EvidenceRefs {
     budgetIds,
     exemptionIds,
     violationIds,
+    focusedDomainIds,
   };
 }

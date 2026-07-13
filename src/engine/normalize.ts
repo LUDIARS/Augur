@@ -74,6 +74,7 @@ export function normalize(request: CreatePlanRequest, options: PlanOptions): Nor
     exemptionConflicts: resolution.conflicts,
     unquantifiedCustomGoals: resolution.unquantifiedCustomGoals,
     constraints: request.constraints ?? [],
+    focusedDomains: request.focusedTesting?.domains ?? [],
     conflictingSignals,
     frameworks: request.project?.frameworks ?? [],
     testRunners: request.project?.testRunners ?? [],

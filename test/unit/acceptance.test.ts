@@ -225,3 +225,51 @@ describe('ST-013 domain filters default proposals', () => {
     }
   });
 });
+
+describe('ST-016 focused testing preserves caller priority', () => {
+  const request: CreatePlanRequest = {
+    objective: { kind: 'new_feature', description: 'Protect player actions before release.' },
+    project: { domain: 'game', testRunners: ['vitest'] },
+    focusedTesting: {
+      source: 'anatomia',
+      domains: [
+        {
+          domain: 'player-actions',
+          priority: 'high',
+          risks: ['boundary', 'memory_safety'],
+          rationale: 'Player-controlled state is authoritative.',
+          targets: [
+            {
+              symbol: 'PlayerController::applyInput',
+              file: 'src/player/controller.cpp',
+              line: 42,
+              variables: [
+                { name: 'input', kind: 'parameter', priority: 'critical', type: 'InputFrame' },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  it('emits one evidence-linked critical suggestion for every requested risk', () => {
+    const plan = createPlan(request);
+    const focused = plan.testPlan.suggestions.filter((suggestion) =>
+      suggestion.title.startsWith('player-actions:'),
+    );
+    expect(focused).toHaveLength(2);
+    expect(focused.map((suggestion) => suggestion.kind)).toEqual(['unit', 'security']);
+    for (const suggestion of focused) {
+      expect(suggestion.priority).toBe('critical');
+      expect(suggestion.targetFiles).toEqual(['src/player/controller.cpp']);
+      expect(suggestion.draft.outline?.join(' ')).toContain('input');
+      const linked = plan.evidence.find((entry) => suggestion.evidenceIds.includes(entry.id));
+      expect(linked?.type).toBe('focused_test_focus');
+    }
+  });
+
+  it('is byte-identical for repeated calls', () => {
+    expect(JSON.stringify(createPlan(request))).toBe(JSON.stringify(createPlan(request)));
+  });
+});

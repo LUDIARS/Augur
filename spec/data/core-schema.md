@@ -6,6 +6,11 @@ This document defines the durable data shapes exchanged through APIs, CLIs, repo
 
 ## CreatePlanRequest
 
+The optional `focusedTesting` field carries deterministic analyzer facts for caller-prioritized
+domains. Its contract and risk mapping are defined in
+[Focused Testing](../feature/focused-testing.md). The engine treats these facts as evidence and
+does not read source files or invoke an LLM.
+
 ```ts
 type CreatePlanRequest = {
   objective: Objective;

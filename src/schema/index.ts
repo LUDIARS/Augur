@@ -121,6 +121,57 @@ export const planningConstraintSchema = z.object({
   value: z.string(),
 });
 
+export const prioritySchema = z.enum(['critical', 'high', 'medium', 'low']);
+
+export const focusedTestingRiskSchema = z.enum([
+  'boundary',
+  'memory_safety',
+  'authorization',
+  'state_transition',
+  'concurrency',
+  'contract',
+]);
+
+export const focusedVariableSchema = z.object({
+  name: z.string().min(1),
+  kind: z.enum(['parameter', 'field']),
+  priority: prioritySchema,
+  type: z.string().min(1).optional(),
+});
+
+export const focusedTargetSchema = z.object({
+  symbol: z.string().min(1),
+  file: z.string().min(1),
+  line: z.number().int().nonnegative(),
+  variables: z.array(focusedVariableSchema),
+});
+
+export const focusedDomainSchema = z.object({
+  domain: z.string().min(1),
+  priority: prioritySchema,
+  risks: z.array(focusedTestingRiskSchema).min(1),
+  inferredRisks: z.array(focusedTestingRiskSchema).min(1).optional(),
+  rationale: z.string().min(1).optional(),
+  targets: z.array(focusedTargetSchema).min(1),
+});
+
+export const focusedTestingSchema = z.object({
+  source: z.literal('anatomia'),
+  domains: z.array(focusedDomainSchema).min(1),
+}).superRefine((value, ctx) => {
+  const seen = new Set<string>();
+  value.domains.forEach((domain, index) => {
+    if (seen.has(domain.domain)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['domains', index, 'domain'],
+        message: `duplicate focused domain "${domain.domain}"`,
+      });
+    }
+    seen.add(domain.domain);
+  });
+});
+
 export const createPlanRequestSchema = z.object({
   objective: objectiveSchema,
   project: projectContextSchema.optional(),
@@ -130,6 +181,7 @@ export const createPlanRequestSchema = z.object({
   runtimeSignals: z.array(runtimeSignalSchema).optional(),
   experienceGoals: z.array(experienceGoalSchema).optional(),
   constraints: z.array(planningConstraintSchema).optional(),
+  focusedTesting: focusedTestingSchema.optional(),
 });
 
 export const testDraftSchema = z.object({
@@ -148,8 +200,6 @@ export const testKindSchema = z.enum([
   'security',
   'flaky',
 ]);
-
-export const prioritySchema = z.enum(['critical', 'high', 'medium', 'low']);
 
 export const testSuggestionSchema = z.object({
   id: z.string(),
@@ -211,6 +261,7 @@ export const evidenceTypeSchema = z.enum([
   'budget_violation',
   'budget_exemption',
   'project_metadata',
+  'focused_test_focus',
 ]);
 
 export const evidenceSchema = z.object({
@@ -245,6 +296,11 @@ export type ExperienceTarget = z.infer<typeof experienceTargetSchema>;
 export type ExperienceExemption = z.infer<typeof experienceExemptionSchema>;
 export type ExperienceGoal = z.infer<typeof experienceGoalSchema>;
 export type PlanningConstraint = z.infer<typeof planningConstraintSchema>;
+export type FocusedTestingRisk = z.infer<typeof focusedTestingRiskSchema>;
+export type FocusedVariable = z.infer<typeof focusedVariableSchema>;
+export type FocusedTarget = z.infer<typeof focusedTargetSchema>;
+export type FocusedDomain = z.infer<typeof focusedDomainSchema>;
+export type FocusedTesting = z.infer<typeof focusedTestingSchema>;
 export type CreatePlanRequest = z.infer<typeof createPlanRequestSchema>;
 export type TestDraft = z.infer<typeof testDraftSchema>;
 export type TestKind = z.infer<typeof testKindSchema>;
