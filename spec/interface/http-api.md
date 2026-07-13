@@ -1,5 +1,9 @@
 # HTTP API
 
+`POST /v1/plans` also accepts the optional `focusedTesting` object documented in
+[Focused Testing](../feature/focused-testing.md). Invalid priorities, duplicate domains, empty
+target sets, or unsupported risk kinds return the normal validation `400` envelope.
+
 ## Overview
 
 Augur exposes an HTTP API for callers that need a structured test plan and fix policy.

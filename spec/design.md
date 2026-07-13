@@ -62,6 +62,7 @@ src/
 │   ├── normalize.ts   #   シグナル正規化 (diff / failure / coverage / runtime)
 │   ├── evidence.ts    #   evidence 抽出・採番
 │   ├── experience.ts / experienceSuggestions.ts  # experience budget 解決・違反判定
+│   ├── focusedTesting.ts # Anatomia の重点domain/variable facts → 決定的テスト候補
 │   ├── rules/         #   objective mapping (8 kind) → TestSuggestion / FixPolicy
 │   ├── scoring.ts     #   優先度・confidence 決定
 │   └── assemble.ts    #   決定的アセンブリ

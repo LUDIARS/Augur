@@ -2,6 +2,7 @@ import { createPlanRequestSchema, type CreatePlanRequest, type PlanResponse } fr
 import { assemble } from './assemble.ts';
 import { extractEvidence } from './evidence.ts';
 import { experienceGuardrails } from './experienceSuggestions.ts';
+import { focusedTestingSuggestions } from './focusedTesting.ts';
 import { normalize } from './normalize.ts';
 import { ruleRegistry } from './rules/index.ts';
 import { scoreAndRank } from './scoring.ts';
@@ -27,9 +28,10 @@ export function createPlan(input: CreatePlanRequest, options: PlanOptions = {}):
   const rule = ruleRegistry[facts.objective.kind];
   const { suggestions: ruleSuggestions, fixSkeleton } = rule.plan(facts, evidence);
   const guardrails = experienceGuardrails(facts, evidence);
+  const focused = focusedTestingSuggestions(facts, evidence);
 
   // Stage 5: score and rank.
-  const ranked = scoreAndRank([...guardrails, ...ruleSuggestions], facts, evidence);
+  const ranked = scoreAndRank([...focused, ...guardrails, ...ruleSuggestions], facts, evidence);
 
   // Stage 6: assemble the response.
   return assemble(facts, evidence, ranked, fixSkeleton);

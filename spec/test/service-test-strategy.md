@@ -174,6 +174,14 @@ Given persistence enabled,
 When a plan is created, retrieved by its `planId`, deleted, and retrieved again,
 Then the creation response carries `planId`, the retrieval matches the stored plan, and the second retrieval returns `404`; and with persistence disabled, responses are byte-identical to stateless output.
 
+### ST-016 Focused Testing Preserves Caller Priority
+
+Given Anatomia analysis facts for a caller-prioritized domain and important variables,
+When Augur creates a plan,
+Then every requested risk produces an evidence-linked suggestion, its priority is at least the
+domain/variable priority, its target files come from the analyzer facts, and repeated calls are
+byte-identical without LLM assistance.
+
 ## CI Handling
 
 CI should execute build, unit, API, golden, and safety tests.

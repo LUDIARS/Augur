@@ -31,6 +31,7 @@ src/
     normalize.ts    # signal parsing: diff, failure, coverage, runtime (includes budget resolution)
     experience.ts   # goal resolution, exemption application, budget comparison
     experienceSuggestions.ts  # budget guardrail suggestions
+    focusedTesting.ts # analyzer-provided domain/variable priority -> deterministic candidates
     evidence.ts     # facts -> Evidence[], stable ordering and ids
     rules/          # one module per objective kind: bugFix.ts, refactor.ts, ...
     scoring.ts      # priority + confidence rules, confidence floor
@@ -77,6 +78,7 @@ type NormalizedFacts = {
   coverage: CoverageFact | null;  // unified regardless of input format
   runtime: RuntimeFact[];         // unit-tagged measurements with scope
   budgets: ResolvedBudget[];      // experience goals resolved to concrete targets
+  focusedDomains: FocusedDomain[]; // analyzer facts; no engine-side source inspection
   constraints: PlanningConstraint[];
 };
 
