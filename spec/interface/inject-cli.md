@@ -10,6 +10,10 @@ The operational entry point for the [Log Injection Framework](../feature/log-inj
 node --experimental-strip-types scripts/inject-logs.ts <command> [options]
 ```
 
+From Phase 3 the same tool is reached as `augur inject <command> [options]`
+through the single entry point in [CLI](./cli.md); the commands, options, and exit
+codes below are unchanged by that move.
+
 | Command | Behavior |
 | --- | --- |
 | `scan` | list injection point candidates (rule, file, anchor, current state) |

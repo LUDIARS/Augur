@@ -4,6 +4,13 @@
 
 Phase 5 design: optional storage of issued plans so callers can retrieve, share, and audit them later. Persistence is **off by default**; without it Augur remains fully stateless, exactly as Phases 0–4 ship.
 
+> **Needs a revision before Phase 5 starts (neco 2026-07-30).** This document
+> assumes an HTTP layer that stamps identity and exposes the store as routes.
+> Augur ships as a daemon-less CLI ([Daemon-less CLI](../plan/daemonless-cli.md)),
+> so identity is stamped by the CLI layer and the store is reached by subcommand.
+> The `PlanStore` interface, the `PlanRecord` shape, and the retention rules are
+> unaffected; only the transport wording below is stale.
+
 ## Design Decisions
 
 - **The engine stays pure.** `createPlan` neither knows nor cares about storage. The HTTP layer stamps identity (`planId`, `createdAt`) onto the response *after* the engine returns and saves the record. Golden tests and ST-007 determinism are untouched because they exercise the engine, not the stamped envelope.

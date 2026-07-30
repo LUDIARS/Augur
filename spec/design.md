@@ -3,8 +3,18 @@
 Augur は目的駆動のテスト計画 & 修正方針サービス。実装に入る前の宣言 3 点
 (I-1 アーキ採用観点 / I-2 目的と重視点 / I-3 設計判断) を本ファイルに明文化する。
 機能仕様は [spec/feature/](./feature/)、データ形状は
-[spec/data/core-schema.md](./data/core-schema.md)、API 境界は
-[spec/interface/http-api.md](./interface/http-api.md) が正本。
+[spec/data/core-schema.md](./data/core-schema.md)、提供面 (境界) は
+[spec/interface/cli.md](./interface/cli.md) が正本
+(request/response の形の参照は [spec/interface/http-api.md](./interface/http-api.md))。
+
+> **I-1 / I-3 の HTTP 部分は差し替え済み (neco 2026-07-30)。** Augur は常駐
+> プロセスを持たない CLI として提供する。決定と移行手順は
+> [plan/daemonless-cli.md](./plan/daemonless-cli.md)、提供面の正本は
+> [interface/cli.md](./interface/cli.md) と
+> [interface/review-plan-cli.md](./interface/review-plan-cli.md)。
+> `http-api.md` は `CreatePlanRequest` / `PlanResponse` の形の参照として残す
+> (transport より schema が長生きする)。以下の HTTP 記述は Phase 6 で
+> 削除されるまでの `main` の記録。
 
 ---
 
@@ -14,13 +24,16 @@ Augur は目的駆動のテスト計画 & 修正方針サービス。実装に�
 Web サービス = TypeScript)。
 
 - **ランタイム**: Node.js >= 22 / TypeScript (ESM) / tsx watch
-- **HTTP**: Hono + @hono/node-server — Excubitor / Ludellus-Server と同一の
-  org 標準構成。プランニングは同期の request/response で完結するため
-  WS / queue は持たない。
+- **提供面**: `bin/augur.mjs` のサブコマンド (`plan` / `review-plan` /
+  `inject`)。プランニングは同期の純関数で完結し、常駐する理由が無いため
+  daemon / port / WS / queue は持たない。
+- ~~**HTTP**: Hono + @hono/node-server~~ — Phase 6 で削除
+  ([daemonless-cli.md](./plan/daemonless-cli.md))。
 - **バリデーション**: zod — `CreatePlanRequest` は外部 (開発者 / AI エージェント /
   CI hook) から届く信頼できない入力のため、境界で必ずスキーマ検証する。
-- **テスト**: Vitest (unit / API / golden / safety)
-- **ログ**: pino (Excubitor と同系)。fatal は fail-fast、swallow 禁止
+- **テスト**: Vitest (unit / CLI / golden / safety)
+- **ログ**: CLI 層から stderr へ書く (~~pino~~ は Phase 6 で除去。CLI に
+  供給すべき log pipeline が無い)。fatal は fail-fast、swallow 禁止
   (HARNESS §3.7 / RULE_CODE §7)。
 - **DB: 持たない**。プランニングは入力シグナルのみから決定される純関数的な
   変換であり、永続状態を要しない。将来永続化する場合は
@@ -52,13 +65,17 @@ Web サービス = TypeScript)。
 ### レイヤー構成 (SRP / 依存一方向)
 
 ```
+bin/
+└── augur.mjs          # entry: 他ツールが node bin/augur.mjs <subcommand> で叩く
 src/
-├── server.ts          # entry: config 読み込み → serve (bootstrap のみ)
-├── app.ts             # Hono app 組み立て (routes 登録のみ)
-├── config/            # 設定 loader (augur.config.json + env override)
-├── routes/            # interface 層: HTTP 境界 (zod 検証 / エラー整形)
+├── cli/               # interface 層: argv dispatch / 信号収集 / 整形
+│                      #   (main.ts / plan.ts / reviewPlan.ts / gather.ts / format.ts)
+├── server.ts          # Phase 6 で削除 — 旧 entry: config 読み込み → serve
+├── app.ts             # Phase 6 で削除 — 旧 Hono app 組み立て
+├── config/            # 設定 loader (augur.config.json。AUGUR_PORT は server と共に消える)
+├── routes/            # Phase 6 で削除 — 旧 HTTP 境界 (zod 検証 / エラー整形)
 ├── schema/            # data 層: core-schema.md の zod スキーマ + 推論型 (正本)
-├── engine/            # domain 層: プランニング本体 (HTTP 非依存)
+├── engine/            # domain 層: プランニング本体 (transport 非依存)
 │   ├── normalize.ts   #   シグナル正規化 (diff / failure / coverage / runtime)
 │   ├── evidence.ts    #   evidence 抽出・採番
 │   ├── experience.ts / experienceSuggestions.ts  # experience budget 解決・違反判定
@@ -70,8 +87,9 @@ src/
 └── inject/            # log injection framework (scan / apply / check / remove)
 ```
 
-- 依存方向は routes → engine/schema の一方向。engine は HTTP / Hono を import
-  しない (golden test を HTTP 抜きで回すため)。
+- 依存方向は cli → engine/schema の一方向。engine は transport を import
+  しない (golden test を CLI 抜きで回すため)。review 用の stage 語彙は
+  caller のものなので `src/cli/reviewPlan.ts` に留め、engine に持ち込まない。
 - module layout の詳細は [implementation-design.md](./implementation-design.md)
   を正本とし、本節と齟齬が出たら両方を同時に更新する (正本二重化の禁止)。
 - objective ごとの提案規則は [purpose-driven-test-plan.md](./feature/purpose-driven-test-plan.md) /
@@ -91,14 +109,16 @@ src/
 ### 設定とポート
 
 - 統合設定は `augur.config.json` (コミット可・非シークレット) を単一 loader で
-  読み、env (`AUGUR_PORT` / `AUGUR_LOG_LEVEL`) の override を許容する
-  (HARNESS §1: 既定値はファイル)。
-- **ポートの正本は Excubitor catalog (`Excubitor/catalog/services.yaml`)**。
-  本リポの設定ファイルの値は正本の写しであり、齟齬時は catalog に従う。
-  プロセスの起動・停止は Excubitor 経由 (セッションから直接 spawn しない)。
+  読み、env の override を許容する (HARNESS §1: 既定値はファイル)。
+  `AUGUR_LOG_LEVEL` は残り、`AUGUR_PORT` は Phase 6 で listener と共に消える。
+- **ポートは持たない。** Phase 6 で listener と `AUGUR_PORT` を削除し、
+  Excubitor catalog (`Excubitor/catalog/services.yaml`) の `augur` エントリも
+  除去する (別リポへの必須フォローアップ)。常駐しないので起動・停止の管理対象
+  でもない。
 
 ### 認証境界
 
 - tier は **personal** (本人 PC 専用の開発支援オラクル。Anatomia / Custos と
-  同族)。loopback bind とし、現段階で Cernere 認証は持たない。
-  外部公開 (saas 化) する場合は Cernere 集約 (RULE §1) を必須とする。
+  同族)。listener を持たないため network 境界そのものが無く、権限は起動した
+  ユーザのプロセス権限に一致する。外部公開 (saas 化) する場合は Cernere 集約
+  (RULE §1) を必須とする。

@@ -2,7 +2,13 @@
 
 ## Status
 
-Roadmap Phases 0–2 are implemented: scaffolding, the core planning engine, and the HTTP API. Phases 3–5 (CLI, LLM assistance, persistence) are designed but not implemented. See the [roadmap](../roadmap.md).
+Roadmap Phases 0–2 are implemented: scaffolding, the core planning engine, and the HTTP API. Phases 3–6 (CLI, LLM assistance, persistence, daemon removal) are designed but not implemented. See the [roadmap](../roadmap.md).
+
+**The server described below is superseded (neco 2026-07-30).** Augur ships as a
+daemon-less CLI — see [Daemon-less CLI](../plan/daemonless-cli.md). This page keeps
+describing the server because it is what `main` still runs; Phase 6 replaces the
+startup flow with `node bin/augur.mjs <subcommand>` and drops the port, `AUGUR_PORT`,
+and the Hono/pino dependencies.
 
 ## Runtime
 

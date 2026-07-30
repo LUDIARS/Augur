@@ -1,6 +1,21 @@
 # Augur
 
-Augur is a purpose-driven test planning and fix policy service.
+Augur is a purpose-driven test planning and fix policy tool.
+
+It ships as a **command-line tool with no resident process**: there is no Augur
+daemon and no port. A stateless planner does not need a server to be available,
+it needs to be callable — see [Daemon-less CLI](./spec/plan/daemonless-cli.md)
+for the decision and the migration. `bin/augur.mjs` is the entry point other
+tools invoke; the HTTP server that still exists on `main` is removed in roadmap
+Phase 6, once Anatomia's Test Suggestions bridge — its only caller — has moved to
+`augur plan --request -`.
+
+The first CLI caller is Revisor, which asks Augur which checks a specific code change
+deserves at the start of every local pull-request review:
+[Review Plan CLI](./spec/interface/review-plan-cli.md). A documentation edit stops
+paying for a vulnerability pass and a full test suite; a change touching
+executable code keeps everything, and the caller enforces a safety floor Augur
+cannot talk it out of.
 
 It does not execute tests. CI, local commands such as `npm run test`, and external test runners are responsible for execution. Augur reads objectives, code changes, failures, coverage, and runtime signals, then proposes what should be tested next and how the fix should be approached.
 

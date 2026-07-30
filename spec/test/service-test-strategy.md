@@ -162,17 +162,19 @@ Given `project.domain` is `"game"` and an abstract goal with no explicit targets
 When Augur creates a plan,
 Then proposed defaults must come only from the common and game sections of the experience goal catalog, and web-only qualities must not be proposed unless the caller referenced them explicitly.
 
-### ST-014 CLI Parity With the HTTP API (Phase 3)
+### ST-014 CLI Parity With the HTTP API (Phase 3) — superseded
 
-Given the same `CreatePlanRequest` submitted through `augur plan --json` and through `POST /v1/plans`,
-When both plans are produced,
-Then the two `PlanResponse` bodies must be identical (ignoring the Phase 5 `planId`/`createdAt` stamps).
+Superseded by [Daemon-less CLI](../plan/daemonless-cli.md): the CLI is the only
+surface, so there is no second surface to prove parity against. The engine
+contract is held by the golden tests on `createPlan`. This scenario is no longer
+part of the Phase 3 acceptance bar in the [Roadmap](../roadmap.md); it stays
+listed so the ST numbering does not shift.
 
 ### ST-015 Persistence Round-Trips and Deletes (Phase 5)
 
 Given persistence enabled,
 When a plan is created, retrieved by its `planId`, deleted, and retrieved again,
-Then the creation response carries `planId`, the retrieval matches the stored plan, and the second retrieval returns `404`; and with persistence disabled, responses are byte-identical to stateless output.
+Then the creation response carries `planId`, the retrieval matches the stored plan, and the second retrieval reports "not found"; and with persistence disabled, plans are byte-identical to stateless output. (The `404` wording is HTTP-era; retrieval and deletion are reached by subcommand once [Plan Persistence](../data/persistence.md) is revised for the CLI.)
 
 ### ST-016 Focused Testing Preserves Caller Priority
 
@@ -184,7 +186,7 @@ byte-identical without LLM assistance.
 
 ## CI Handling
 
-CI should execute build, unit, API, golden, and safety tests.
+CI should execute build, unit, CLI, golden, and safety tests (the API tests run until the server is removed in Phase 6).
 
 CI should not depend on external web response timing to validate Augur's core behavior.
 

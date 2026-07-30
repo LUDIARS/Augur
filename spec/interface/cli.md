@@ -4,15 +4,25 @@
 
 The CLI brings the Phase 1 engine to the developer's working directory: it gathers local signals (git state, log files, coverage, analyzer outputs), builds a `CreatePlanRequest`, calls `createPlan` directly, and prints the plan. No server required.
 
+Since [Daemon-less CLI](../plan/daemonless-cli.md) (neco 2026-07-30) this is not merely "no server required" — **the CLI is Augur's only surface.** There is no Augur daemon and no port.
+
 The engine boundary from the [Implementation Design](../implementation-design.md) holds: **only the CLI layer shells out** (to `git`) and reads files; the engine still receives data, never runs commands.
 
-## Command
+## Entry point
+
+Other tools invoke Augur as `node <augurFolder>/bin/augur.mjs <subcommand>`, with no shell and no `PATH` assumption — the same shape Revisor already uses for `bin/anatomia.mjs`. The shim resolves `dist/cli/main.js` when a build is present, and otherwise re-executes `process.execPath` with `--experimental-strip-types` on `src/cli/main.ts`, because Node before 22.18 does not strip types without the flag.
+
+`package.json` also exposes it as the `augur` bin for local installs.
+
+## Commands
 
 ```text
-augur plan [options]
+augur plan [options]           # this document
+augur review-plan --json       # ./review-plan-cli.md
+augur inject <...>             # ./inject-cli.md
 ```
 
-One command in Phase 3. Future subcommands (e.g. `augur goals` to list the catalog) may be added without breaking it.
+`augur inject` is the existing log-injection tool, reached as a subcommand rather than as a second entry point. Future subcommands (e.g. `augur goals` to list the catalog) may be added without breaking these.
 
 ## Options
 
@@ -44,6 +54,14 @@ One command in Phase 3. Future subcommands (e.g. `augur goals` to list the catal
 | --- | --- | --- |
 | `--domain <d>` | `project.domain` | `web` / `game` / `service` / `other` |
 | (automatic) | `project.*` | when `package.json` exists: `name`, `packageManager`, and `testRunners` inferred from known devDependencies (vitest, jest, playwright, cypress); inference is best-effort and always overridable via `--project <file.json>` |
+
+### Pre-assembled requests
+
+| Option | Behavior |
+| --- | --- |
+| `--request <file>` | read a complete `CreatePlanRequest` and skip signal gathering; `-` reads stdin |
+
+This is the direct replacement for `POST /v1/plans` ([Daemon-less CLI](../plan/daemonless-cli.md)). A caller that already built the request — Anatomia's Test Suggestions bridge is the one that exists — must not have Augur re-derive anything from a working directory it does not own, so `--request` is mutually exclusive with every gathering flag and with `--no-git`; combining them is a usage error (exit `1`). Validation failures produce the same message the HTTP `400` envelope carried.
 
 ### Output
 
@@ -91,12 +109,11 @@ Rules:
 
 A plan whose suggestions include `critical` items still exits `0`: producing the plan is the CLI's job; enforcement belongs to the tests it proposes. A `--fail-on <priority>` flag (exit `3` when the plan contains suggestions at or above the given priority) is reserved for CI gating but not part of Phase 3.
 
-## Parity with the HTTP API
+## Relationship to the engine
 
-The CLI and the HTTP API call the same `createPlan` with the same request shape, so:
+The CLI calls `createPlan` directly and performs no planning logic of its own; flags only *assemble the request*. Golden tests on `createPlan` are what hold the contract.
 
-- Identical input produces identical `PlanResponse` JSON via both surfaces (a parity test builds one request, runs it through both, and diffs).
-- The CLI performs no planning logic of its own; flags only *assemble the request*.
+The former CLI↔HTTP parity test is superseded by [Daemon-less CLI](../plan/daemonless-cli.md): there is one surface, so there is no parity to prove. [HTTP API](./http-api.md) is retained as the `CreatePlanRequest`/`PlanResponse` reference — the schema outlives the transport.
 
 ## Constraints
 
@@ -108,6 +125,8 @@ The CLI and the HTTP API call the same `createPlan` with the same request shape,
 
 - [Core Data Schema](../data/core-schema.md)
 - [Planning Engine](../feature/planning-engine.md)
-- [HTTP API](./http-api.md)
+- [Review Plan CLI](./review-plan-cli.md)
+- [Daemon-less CLI](../plan/daemonless-cli.md)
+- [HTTP API](./http-api.md) — superseded transport, retained as schema reference
 - [Implementation Design](../implementation-design.md)
 - [Roadmap](../roadmap.md) — Phase 3

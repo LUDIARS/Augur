@@ -1,5 +1,14 @@
 # HTTP API
 
+> **Superseded transport (neco 2026-07-30).** Augur ships as a daemon-less CLI;
+> see [Daemon-less CLI](../plan/daemonless-cli.md) and [CLI](./cli.md). This
+> document is retained as the reference for the `CreatePlanRequest` and
+> `PlanResponse` shapes, which the CLI uses unchanged — the schema outlives the
+> transport. The server, the port, and `GET /v1/health` are removed in migration
+> step A3 — **after** its one caller, Anatomia's Test Suggestions bridge, moves to
+> `augur plan --request -` (step A2b). Until then this document describes a live
+> surface.
+
 `POST /v1/plans` also accepts the optional `focusedTesting` object documented in
 [Focused Testing](../feature/focused-testing.md). Invalid priorities, duplicate domains, empty
 target sets, or unsupported risk kinds return the normal validation `400` envelope.
@@ -155,6 +164,11 @@ Request fragment:
 The resulting plan contains a `critical` guardrail for `/search` (explicit 20ms budget, already violated at 42ms) carrying the budget in the suggestion's `budget` field, and a lower-priority guardrail for auth flows against the relaxed 3s budget. The `/login` measurement is not flagged as a violation because it falls inside the exempted scope and under the relaxed budget.
 
 ## Retrieve a Stored Plan (Phase 5)
+
+> These two Phase 5 routes will not be built: with the daemon removed, retrieval
+> and deletion are reached by subcommand. They are kept as the description of the
+> operations (id lookup, permanent delete, retention) that
+> [Plan Persistence](../data/persistence.md) carries over to the CLI.
 
 Available only when persistence is enabled; semantics in [Plan Persistence](../data/persistence.md).
 

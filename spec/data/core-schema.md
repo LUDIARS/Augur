@@ -164,7 +164,7 @@ type PlanResponse = {
 };
 ```
 
-`planId` and `createdAt` are stamped by the HTTP layer after the engine returns, never by the engine itself; see [Plan Persistence](./persistence.md). With persistence disabled they are absent and the response is identical to the stateless behavior.
+`planId` and `createdAt` are stamped by the surface layer (the CLI; the HTTP layer while it exists in `main`) after the engine returns, never by the engine itself; see [Plan Persistence](./persistence.md). With persistence disabled they are absent and the response is identical to the stateless behavior.
 
 ## TestPlan
 
