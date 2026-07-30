@@ -4,7 +4,7 @@ This document defines the order of implementation for Augur and the acceptance b
 
 Technology choices, module layout, and internal interfaces for these phases are defined in the [Implementation Design](./implementation-design.md).
 
-Status: design is complete for all phases. Phases 0–2 are implemented; Phases 3–6 are designed ([CLI](./interface/cli.md), [LLM Assistance](./feature/llm-assistance.md), [Plan Persistence](./data/persistence.md), [Daemon-less CLI](./plan/daemonless-cli.md)) and not yet implemented.
+Status: design is complete for all phases. Phases 0–3 are implemented; Phases 4–6 are designed ([LLM Assistance](./feature/llm-assistance.md), [Plan Persistence](./data/persistence.md), [Daemon-less CLI](./plan/daemonless-cli.md)) and not yet implemented. [Daemon-less CLI](./plan/daemonless-cli.md) step A1 landed with Phase 3; steps A2b and A3, which remove the daemon, are Phase 6 and outstanding.
 
 **Phase 2 is superseded (neco 2026-07-30).** Augur ships as a daemon-less CLI:
 Phase 3 becomes the delivery surface, and the HTTP server is removed in Phase 6.
@@ -58,7 +58,7 @@ Acceptance:
 - API tests pass against a running server instance.
 - The local startup flow in [Local Development Setup](./setup/local-development.md) works end to end.
 
-## Phase 3 — CLI Interface (the delivery surface)
+## Phase 3 — CLI Interface (the delivery surface) — implemented
 
 Design: [CLI](./interface/cli.md), [Review Plan CLI](./interface/review-plan-cli.md),
 [Daemon-less CLI](./plan/daemonless-cli.md) step A1.

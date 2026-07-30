@@ -1,7 +1,7 @@
 {
   "name": "augur",
   "version": "0.1.0",
-  "description": "Purpose-driven test planning and fix policy service",
+  "description": "Purpose-driven test planning and fix policy CLI",
   "type": "module",
   "private": true,
   "engines": {
@@ -14,7 +14,9 @@
     "test": "vitest run",
     "lint": "eslint .",
     "golden:update": "node --experimental-strip-types scripts/update-golden.ts",
-    "inject": "node --experimental-strip-types scripts/inject-logs.ts"
+    "inject": "node --experimental-strip-types scripts/inject-logs.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "augur": "node bin/augur.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.0",
@@ -28,5 +30,15 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^3.0.0"
-  }
+  },
+  "bin": {
+    "augur": "bin/augur.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "spec",
+    "README.md"
+  ]
 }

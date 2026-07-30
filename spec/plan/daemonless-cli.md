@@ -77,11 +77,16 @@ A3 is gated on that migration; see [A3](#a3--remove-the-daemon).
 
 Sequenced so nothing is removed before its replacement exists.
 
-### A1 — Add the CLI (additive, server untouched)
+### A1 — Add the CLI (additive, server untouched) — **done**
 
-- `src/cli/` per the module layout: `main.ts` (argv dispatch), `plan.ts`,
-  `reviewPlan.ts`, `gather.ts` (git/file signal gathering), `format.ts`.
+- `src/cli/` per the module layout: `main.ts` (argv dispatch), `args.ts` (argv
+  parsing and the `UsageError` that maps to exit `1`), `plan.ts`, `reviewPlan.ts`,
+  `gather.ts` (git/file signal gathering), `format.ts`.
   Dependency direction stays one-way: `cli → engine → catalog/schema`.
+  `args.ts` knows nothing about the engine: it turns tokens into flags, and each
+  command declares which flags it accepts so a mistyped option is a usage error
+  rather than a silently ignored one. Parsing itself stays permissive because
+  `augur inject` forwards its own flag surface through the same argv.
 - `bin/augur.mjs` — the entry other tools invoke as
   `node <augurFolder>/bin/augur.mjs <subcommand>`. It resolves the
   implementation in this order:
@@ -90,6 +95,14 @@ Sequenced so nothing is removed before its replacement exists.
      on `src/cli/main.ts`.
   The shim exists because Node before 22.18 does not strip types without the
   flag, and Revisor invokes `process.execPath` directly with no shell.
+  As implemented, the shim does not branch on the Node version: it attempts the
+  import and re-executes with the flag only when Node actually rejects the `.ts`
+  extension. The test is then what this Node does, not what its version implies,
+  and a future default cannot make the version check stale. The re-executed entry
+  is `bin/augur.mjs` itself, not `src/cli/main.ts`: that module only exports
+  `main`, so running it as the entry point would exit `0` having planned nothing.
+  A failure to load the implementation at all exits `2`, not `1` — it is an
+  internal error, not the caller asking wrong.
 - Subcommands: `plan` ([CLI](../interface/cli.md)), `review-plan`
   ([Review Plan CLI](../interface/review-plan-cli.md)), and `inject` (the
   existing `npm run inject` tool, [inject CLI](../interface/inject-cli.md)),

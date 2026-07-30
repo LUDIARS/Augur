@@ -126,8 +126,10 @@ behaviour when in doubt — never a partial plan.
 `createPlan`, the same entry point `augur plan` uses:
 
 - `objective.kind` — inferred from the change profile (`docs`-only →
-  `unknown` with a documentation description; a change with `migration` or
-  `entrypoint` surfaces → `stability`; otherwise the caller-neutral default).
+  `unknown` with a documentation description; a change carrying any runtime
+  surface — `migration`, `entrypoint`, `ui`, `infra` — → `stability`; otherwise
+  `refactor`, which is the structural reading of a change that moves code without
+  moving a surface a unit test cannot stand in for).
 - `project.testRunners` / `change.changedFiles` — not available and not needed;
   the profile's counts and kinds carry the same decision weight here.
 - The plan's suggestions and risks are reduced to stage decisions: a suggestion

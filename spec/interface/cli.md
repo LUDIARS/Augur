@@ -10,7 +10,7 @@ The engine boundary from the [Implementation Design](../implementation-design.md
 
 ## Entry point
 
-Other tools invoke Augur as `node <augurFolder>/bin/augur.mjs <subcommand>`, with no shell and no `PATH` assumption — the same shape Revisor already uses for `bin/anatomia.mjs`. The shim resolves `dist/cli/main.js` when a build is present, and otherwise re-executes `process.execPath` with `--experimental-strip-types` on `src/cli/main.ts`, because Node before 22.18 does not strip types without the flag.
+Other tools invoke Augur as `node <augurFolder>/bin/augur.mjs <subcommand>`, with no shell and no `PATH` assumption — the same shape Revisor already uses for `bin/anatomia.mjs`. The shim resolves `dist/cli/main.js` when a build is present, and otherwise imports `src/cli/main.ts`; when that import fails because Node before 22.18 does not strip types without the flag, it re-executes **itself** via `process.execPath` with `--experimental-strip-types`. The re-executed entry is the shim and not `src/cli/main.ts`, which only exports `main` — running the module directly would invoke nothing and exit `0` with no plan.
 
 `package.json` also exposes it as the `augur` bin for local installs.
 
@@ -31,14 +31,14 @@ augur inject <...>             # ./inject-cli.md
 | Option | Maps to | Notes |
 | --- | --- | --- |
 | `--kind <kind>` | `objective.kind` | one of the eight kinds; defaults to `unknown` |
-| `--description <text>` | `objective.description` | required; also accepted as the positional argument |
+| `--description <text>` | `objective.description` | required; also accepted as the positional argument. Giving both, or two positionals, names two descriptions and is a usage error rather than a silent choice between them |
 | `--outcome <text>` | `objective.desiredOutcome` | optional |
 
 ### Signal gathering
 
 | Option | Maps to | Behavior |
 | --- | --- | --- |
-| `--base <ref>` | `change.diff`, `change.changedFiles` | `git diff <ref>` and `git diff --name-only <ref>`; default base is `HEAD` (working tree changes) |
+| `--base <ref>` | `change.diff`, `change.changedFiles` | `git diff <ref>` and `git diff --name-only <ref>`; default base is `HEAD` (working tree changes). The value must name a ref: a leading `-` would reach `git` as an option and is a usage error |
 | `--no-git` | — | skip git entirely (non-repo directories) |
 | `--failure-log <file>` | `failure.stdout`/`stderr` | reads the file; `-` reads stdin, so `npm test 2>&1 \| augur plan --failure-log -` works |
 | `--failure-command <cmd>` | `failure.command` | the command that produced the log |
@@ -46,7 +46,7 @@ augur inject <...>             # ./inject-cli.md
 | `--coverage <file>` | `coverage` | format inferred from extension (`.info` → lcov, `.json` → json, else text) |
 | `--signals <file.json>` | `runtimeSignals` | JSON array of `RuntimeSignal`s — latency measurements, `media_analysis` analyzer outputs, anything the schema accepts |
 | `--goals <file.json>` | `experienceGoals` | JSON array of `ExperienceGoal`s with targets and exemptions |
-| `--quality <q>` | `experienceGoals` | shorthand for an abstract goal (repeatable); merged with `--goals` |
+| `--quality <q>` | `experienceGoals` | shorthand for an abstract goal (repeatable); merged with `--goals`. Checked against the quality catalog like `--kind` and `--domain`, so a typo names the flag rather than a request field the caller never wrote |
 
 ### Project context
 
