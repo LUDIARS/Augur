@@ -70,7 +70,7 @@ A3 is gated on that migration; see [A3](#a3--remove-the-daemon).
 | The one existing HTTP caller (Anatomia, see [Callers](#callers)) | `augur plan --request -`, a `CreatePlanRequest` read from stdin. Anatomia already assembles the whole request, so it needs the engine, not the signal gathering. |
 | Remote callers | There are none: the only caller is a local process on the same workstation. If a remote one appears, `augur plan` over SSH, or a thin caller-owned HTTP wrapper, is enough — the wrapper is not Augur's problem. |
 | CLI↔HTTP parity test (Phase 3 acceptance) | Golden tests on `createPlan` keep the engine contract. Parity between two surfaces stops being a thing to prove when there is one surface. |
-| Phase 5 persistence assumed an HTTP layer stamping plan ids | The CLI stamps the id and writes to a local store path. [Plan Persistence](../data/persistence.md) needs a revision before Phase 5 starts; it is not blocked by this decision. |
+| Phase 5 persistence assumed an HTTP layer stamping plan ids | The CLI stamps the id and writes to a local store path, and the store is reached by `augur plans get` / `augur plans delete`. [Plan Persistence](../data/persistence.md) has been revised accordingly. |
 | `GET /v1/health` for Excubitor | Nothing to health-check. The catalog entry is removed rather than replaced. |
 
 ## Migration

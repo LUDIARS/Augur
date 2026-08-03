@@ -104,18 +104,17 @@ Acceptance:
 
 Design: [Plan Persistence](./data/persistence.md). The [Core Data Schema](./data/core-schema.md) already carries the backward-compatible `planId`/`createdAt` additions.
 
-**Blocked on a revision.** This phase assumed an HTTP layer to stamp plan ids and
-to expose the store. With the daemon removed, the CLI stamps the id and the store
-is reached by subcommand, not by route. [Plan Persistence](./data/persistence.md)
-needs rewriting before Phase 5 starts; the decision itself is not blocked. The
-route wording in the scope below is HTTP-era and is rewritten with that spec.
+**Revised for the CLI (neco 2026-07-31).** This phase assumed an HTTP layer to
+stamp plan ids and expose the store. With the daemon removed, the CLI stamps the
+id and the store is reached by subcommand (`augur plans get|delete`).
+[Plan Persistence](./data/persistence.md) is rewritten accordingly; the
+`PlanStore` interface, the `PlanRecord` shape and the retention rules were
+unaffected.
 
 Scope:
 
 - Optional storage of issued plans behind the `PlanStore` interface (SQLite file store, in-memory store for tests), off by default.
-- Retrieval and deletion of a stored plan by id, with retention sweep (written as
-  `GET`/`DELETE /v1/plans/{planId}` in the HTTP-era spec; reached by subcommand
-  once that spec is revised).
+- Retrieval and deletion of a stored plan by id (`augur plans get|delete <planId>`), with retention sweep.
 
 Acceptance:
 
