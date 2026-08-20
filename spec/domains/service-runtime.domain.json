@@ -1,0 +1,26 @@
+{
+  "name": "service-runtime",
+  "description": "プロセスとしての Augur。 CLI 入口、 設定、 起動、 テストと運用スクリプト。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/cli/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/config/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/app\\.ts$"
+    },
+    {
+      "pathPattern": "(^|/)bin/[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)test/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)scripts/(?:.*/)?[^/]+$"
+    }
+  ]
+}

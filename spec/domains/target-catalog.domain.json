@@ -1,0 +1,11 @@
+{
+  "name": "target-catalog",
+  "description": "計画対象の台帳。 対象プロジェクトと構成の登録・参照。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/catalog/(?:.*/)?[^/]+$"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "plan-injection",
+  "description": "生成した計画の配布。 対象リポジトリやツールへの差し込み。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/inject/(?:.*/)?[^/]+$"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "test-planning-engine",
+  "description": "テスト計画の生成。 対象の解析結果から計画を組み立てる中核。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/engine/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/schema/(?:.*/)?[^/]+$"
+    }
+  ]
+}
