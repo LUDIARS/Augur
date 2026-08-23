@@ -1,0 +1,30 @@
+# Excubitor catalog fragment (Augur)
+# 集積仕様: Excubitor catalog/FRAGMENTS.md (各リポの fragment が正本)
+#
+# Augur は daemon-optional (spec/plan/test-management.md §1.2): CLI / MCP (stdio) が
+# 正本で、この HTTP シェル (`augur serve`) は opt-in。よって autostart は false、
+# 止まっていても CLI / MCP は動く。port は augur.config.json と対で保つ (catalog が正)。
+services:
+  - code: augur
+    name: Augur (Test Management)
+    tier: personal
+    project_code: augur
+    component: backend
+    port: 4210
+    repo: LUDIARS/Augur
+    runtime: node
+    cwd: ${ARS_ROOT}/Augur
+    command: node bin/augur.mjs serve
+    allow_hot_reload: false
+    autostart: false
+    restart_policy: "no"
+    max_restart: 3
+    log_path: ${ARS_ROOT}/logs/augur
+    health:
+      type: http
+      url: http://127.0.0.1:4210/v1/health
+      interval_sec: 30
+    provides:
+      # `augur serve` は loopback にのみ bind するため、${host} ではなく
+      # 実際に listen しているリテラル loopback を渡す (Revisor の断片と同じ理由)。
+      AUGUR_URL: http://127.0.0.1:${port}
