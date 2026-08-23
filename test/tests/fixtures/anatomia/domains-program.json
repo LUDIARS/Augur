@@ -1,0 +1,415 @@
+{
+  "repoPath": ".",
+  "config": {
+    "layers": [
+      {
+        "glob": "bin/**",
+        "layer": "presentation"
+      },
+      {
+        "glob": "scripts/**",
+        "layer": "infrastructure"
+      },
+      {
+        "glob": "src/app.ts",
+        "layer": "infrastructure"
+      },
+      {
+        "glob": "src/bus/**",
+        "layer": "infrastructure"
+      },
+      {
+        "glob": "src/catalog/**",
+        "layer": "domain-logic"
+      },
+      {
+        "glob": "src/cli/**",
+        "layer": "presentation"
+      },
+      {
+        "glob": "src/config/**",
+        "layer": "infrastructure"
+      },
+      {
+        "glob": "src/engine/**",
+        "layer": "domain-logic"
+      },
+      {
+        "glob": "src/inject/**",
+        "layer": "domain-logic"
+      },
+      {
+        "glob": "src/mcp/**",
+        "layer": "presentation"
+      },
+      {
+        "glob": "src/operations/**",
+        "layer": "application"
+      },
+      {
+        "glob": "src/routes/**",
+        "layer": "presentation"
+      },
+      {
+        "glob": "src/schema/**",
+        "layer": "domain-logic"
+      },
+      {
+        "glob": "src/server.ts",
+        "layer": "infrastructure"
+      },
+      {
+        "glob": "src/tests/**",
+        "layer": "domain-logic"
+      },
+      {
+        "glob": "src/tests/run-store.ts",
+        "layer": "infrastructure"
+      },
+      {
+        "glob": "src/tests/run.ts",
+        "layer": "application"
+      },
+      {
+        "glob": "test/**",
+        "layer": "shared"
+      }
+    ],
+    "mergeCouplingThreshold": 1
+  },
+  "configPresent": true,
+  "layers": [
+    {
+      "layer": "application",
+      "domainCount": 1,
+      "moduleCount": 1,
+      "symbolCount": 28
+    },
+    {
+      "layer": "domain-logic",
+      "domainCount": 7,
+      "moduleCount": 7,
+      "symbolCount": 210
+    },
+    {
+      "layer": "infrastructure",
+      "domainCount": 4,
+      "moduleCount": 4,
+      "symbolCount": 31
+    },
+    {
+      "layer": "presentation",
+      "domainCount": 5,
+      "moduleCount": 5,
+      "symbolCount": 102
+    },
+    {
+      "layer": "shared",
+      "domainCount": 7,
+      "moduleCount": 7,
+      "symbolCount": 232
+    }
+  ],
+  "modules": [
+    {
+      "moduleId": "bin",
+      "layer": "presentation",
+      "source": "config",
+      "symbolCount": 4,
+      "files": [
+        "bin/augur.mjs"
+      ]
+    },
+    {
+      "moduleId": "scripts",
+      "layer": "infrastructure",
+      "source": "config",
+      "symbolCount": 1,
+      "files": [
+        "scripts/inject-logs.ts"
+      ]
+    },
+    {
+      "moduleId": "src",
+      "layer": "infrastructure",
+      "source": "config",
+      "symbolCount": 7,
+      "files": [
+        "src/app.ts",
+        "src/server.ts"
+      ]
+    },
+    {
+      "moduleId": "src/bus",
+      "layer": "infrastructure",
+      "source": "config",
+      "symbolCount": 18,
+      "files": [
+        "src/bus/index.ts",
+        "src/bus/local.ts",
+        "src/bus/wrapper.ts"
+      ]
+    },
+    {
+      "moduleId": "src/catalog",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 2,
+      "files": [
+        "src/catalog/index.ts"
+      ]
+    },
+    {
+      "moduleId": "src/cli",
+      "layer": "presentation",
+      "source": "config",
+      "symbolCount": 46,
+      "files": [
+        "src/cli/args.ts",
+        "src/cli/format.ts",
+        "src/cli/gather.ts",
+        "src/cli/main.ts",
+        "src/cli/plan.ts",
+        "src/cli/reviewPlan.ts"
+      ]
+    },
+    {
+      "moduleId": "src/cli/tests",
+      "layer": "presentation",
+      "source": "config",
+      "symbolCount": 22,
+      "files": [
+        "src/cli/tests/author.ts",
+        "src/cli/tests/common.ts",
+        "src/cli/tests/flag.ts",
+        "src/cli/tests/index.ts",
+        "src/cli/tests/lint.ts",
+        "src/cli/tests/list.ts",
+        "src/cli/tests/plan.ts",
+        "src/cli/tests/prune.ts",
+        "src/cli/tests/register.ts",
+        "src/cli/tests/report.ts",
+        "src/cli/tests/revive.ts",
+        "src/cli/tests/run.ts",
+        "src/cli/tests/runs.ts",
+        "src/cli/tests/show.ts",
+        "src/cli/tests/sweep.ts",
+        "src/cli/tests/verdict.ts"
+      ]
+    },
+    {
+      "moduleId": "src/config",
+      "layer": "infrastructure",
+      "source": "config",
+      "symbolCount": 5,
+      "files": [
+        "src/config/config.ts"
+      ]
+    },
+    {
+      "moduleId": "src/engine",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 29,
+      "files": [
+        "src/engine/assemble.ts",
+        "src/engine/createPlan.ts",
+        "src/engine/evidence.ts",
+        "src/engine/experience.ts",
+        "src/engine/experienceSuggestions.ts",
+        "src/engine/focusedTesting.ts",
+        "src/engine/normalize.ts",
+        "src/engine/scoring.ts"
+      ]
+    },
+    {
+      "moduleId": "src/engine/rules",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 16,
+      "files": [
+        "src/engine/rules/bugFix.ts",
+        "src/engine/rules/newFeature.ts",
+        "src/engine/rules/performance.ts",
+        "src/engine/rules/refactor.ts",
+        "src/engine/rules/regression.ts",
+        "src/engine/rules/security.ts",
+        "src/engine/rules/shared.ts",
+        "src/engine/rules/stability.ts",
+        "src/engine/rules/unknown.ts"
+      ]
+    },
+    {
+      "moduleId": "src/inject",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 46,
+      "files": [
+        "src/inject/apply.ts",
+        "src/inject/check.ts",
+        "src/inject/glob.ts",
+        "src/inject/manifest.ts",
+        "src/inject/markers.ts",
+        "src/inject/project.ts",
+        "src/inject/remove.ts",
+        "src/inject/scan.ts"
+      ]
+    },
+    {
+      "moduleId": "src/mcp",
+      "layer": "presentation",
+      "source": "config",
+      "symbolCount": 8,
+      "files": [
+        "src/mcp/server.ts"
+      ]
+    },
+    {
+      "moduleId": "src/operations",
+      "layer": "application",
+      "source": "config",
+      "symbolCount": 28,
+      "files": [
+        "src/operations/tests.ts"
+      ]
+    },
+    {
+      "moduleId": "src/routes",
+      "layer": "presentation",
+      "source": "config",
+      "symbolCount": 22,
+      "files": [
+        "src/routes/errors.ts",
+        "src/routes/plans.ts",
+        "src/routes/tests.ts"
+      ]
+    },
+    {
+      "moduleId": "src/schema",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 2,
+      "files": [
+        "src/schema/index.ts"
+      ]
+    },
+    {
+      "moduleId": "src/tests",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 94,
+      "files": [
+        "src/tests/anatomia.ts",
+        "src/tests/bundle.ts",
+        "src/tests/config.ts",
+        "src/tests/flag.ts",
+        "src/tests/git.ts",
+        "src/tests/registry.ts",
+        "src/tests/report.ts",
+        "src/tests/retirement.ts",
+        "src/tests/run-store.ts",
+        "src/tests/run.ts",
+        "src/tests/types.ts"
+      ]
+    },
+    {
+      "moduleId": "src/tests/runners",
+      "layer": "domain-logic",
+      "source": "config",
+      "symbolCount": 21,
+      "files": [
+        "src/tests/runners/command.ts",
+        "src/tests/runners/index.ts",
+        "src/tests/runners/presets.ts",
+        "src/tests/runners/types.ts",
+        "src/tests/runners/vitest.ts"
+      ]
+    },
+    {
+      "moduleId": "test/api",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 10,
+      "files": [
+        "test/api/api.test.ts"
+      ]
+    },
+    {
+      "moduleId": "test/cli",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 58,
+      "files": [
+        "test/cli/main.test.ts",
+        "test/cli/plan.test.ts",
+        "test/cli/reviewPlan.test.ts"
+      ]
+    },
+    {
+      "moduleId": "test/golden",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 3,
+      "files": [
+        "test/golden/golden.test.ts"
+      ]
+    },
+    {
+      "moduleId": "test/safety",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 5,
+      "files": [
+        "test/safety/safety.test.ts"
+      ]
+    },
+    {
+      "moduleId": "test/tests",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 56,
+      "files": [
+        "test/tests/bundle-retirement.test.ts",
+        "test/tests/fixtures.ts",
+        "test/tests/flag.test.ts",
+        "test/tests/operations.test.ts",
+        "test/tests/registry.test.ts",
+        "test/tests/run-store.test.ts",
+        "test/tests/runner-bus.test.ts"
+      ]
+    },
+    {
+      "moduleId": "test/unit",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 50,
+      "files": [
+        "test/unit/acceptance.test.ts",
+        "test/unit/catalog.test.ts",
+        "test/unit/config.test.ts",
+        "test/unit/media.test.ts"
+      ]
+    },
+    {
+      "moduleId": "test/unit/inject",
+      "layer": "shared",
+      "source": "config",
+      "symbolCount": 50,
+      "files": [
+        "test/unit/inject/apply.test.ts",
+        "test/unit/inject/check.test.ts",
+        "test/unit/inject/glob.test.ts",
+        "test/unit/inject/remove.test.ts",
+        "test/unit/inject/scan.test.ts"
+      ]
+    }
+  ],
+  "unclassified": [],
+  "totals": {
+    "modules": 24,
+    "symbols": 603,
+    "domains": 24,
+    "unclassifiedModules": 0,
+    "unclassifiedSymbols": 0
+  }
+}

@@ -16,7 +16,7 @@ const configFileSchema = z.object({
     maxRunsPerRepository: z.number().int().positive().default(200),
   }).default({}),
   dataDir: z.string().min(1).optional(),
-  authoring: z.object({ model: z.string().min(1) }).default({ model: 'claude-sonnet-4-5' }),
+  authoring: z.object({ model: z.string().min(1).optional() }).default({}),
 }).strict();
 
 type ConfigFile = z.infer<typeof configFileSchema>;

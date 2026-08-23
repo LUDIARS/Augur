@@ -9,8 +9,12 @@ export async function registerCommand(context: TestCliContext, operations: TestO
   ]);
   const fromPlan = flagValue(context.args, '--from-plan');
   if (fromPlan !== undefined) {
-    const tests = await operations.registerFromPlan({ repoPath: repoPath(context), planId: fromPlan });
-    emitJsonOrText(context, tests, `${tests.map((test) => `registered ${test.id} ${test.name}`).join('\n')}\n`);
+    const result = await operations.registerFromPlan({ repoPath: repoPath(context), planId: fromPlan });
+    const text = [
+      ...result.registered.map((test) => `registered ${test.id} ${test.name}`),
+      ...result.unmatched.map((target) => `unmatched ${target.key}: ${target.reason}`),
+    ].join('\n');
+    emitJsonOrText(context, result, text === '' ? '' : `${text}\n`);
     return 0;
   }
   const test = await operations.register({

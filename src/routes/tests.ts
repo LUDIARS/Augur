@@ -4,7 +4,6 @@ import { createRunId } from '../tests/run.ts';
 import { bundleKindSchema, verdictSchema } from '../tests/types.ts';
 import {
   createTestOperations,
-  NotImplementedOperationError,
   type DefaultTestOperations,
   type TestOperations,
 } from '../operations/tests.ts';
@@ -75,9 +74,7 @@ export function createTestsRoute(operations: TestOperations & Partial<Pick<Defau
     }), 201);
   });
 
-  route.get('/tests/plans/:planId', () => {
-    throw new NotImplementedOperationError('not implemented in this build (Phase T2)');
-  });
+  route.get('/tests/plans/:planId', async (c) => c.json(await operations.getPlan(c.req.param('planId'))));
 
   route.post('/tests/plans/:planId/author', async (c) => {
     if (!writeAllowed(c)) return forbidden(c);
@@ -86,16 +83,18 @@ export function createTestsRoute(operations: TestOperations & Partial<Pick<Defau
       ...repositoryFields,
       author: z.enum(['session', 'claude-cli']),
       bus: z.string().optional(),
-    }).strict().refine(
-      (value) => value.repository !== undefined || value.repoPath !== undefined,
-      { message: 'repository or repoPath is required' },
-    ).safeParse(body);
+      before: z.string().optional(),
+    }).strict().safeParse(body);
     if (!parsed.success) return invalidRequest(c, validationMessage(parsed.error));
+    const repo = parsed.data.repository === undefined && parsed.data.repoPath === undefined
+      ? undefined
+      : resolveOperationRepo(parsed.data, operations);
     return c.json(await operations.author({
       planId: c.req.param('planId'),
-      repoPath: resolveOperationRepo(parsed.data, operations),
+      ...(repo === undefined ? {} : { repoPath: repo }),
       author: parsed.data.author,
       ...(parsed.data.bus === undefined ? {} : { bus: parsed.data.bus }),
+      ...(parsed.data.before === undefined ? {} : { before: parsed.data.before }),
     }));
   });
 

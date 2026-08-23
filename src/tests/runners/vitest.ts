@@ -85,7 +85,8 @@ function parseTest(test: TestRecord, files: readonly VitestFileResult[], output:
   const file = files.find((candidate) => sameFile(candidate.name, test.file));
   const assertions = Array.isArray(file?.assertionResults) ? file.assertionResults as VitestAssertion[] : [];
   const assertion = assertions.find((candidate) => assertionName(candidate) === test.name)
-    ?? (test.selector !== undefined ? assertions.find((candidate) => assertionName(candidate) === test.selector) : undefined);
+    ?? (test.selector !== undefined ? assertions.find((candidate) => assertionName(candidate) === test.selector) : undefined)
+    ?? assertions.find((candidate) => assertionName(candidate).startsWith(`${test.name} `));
   if (assertion === undefined) return errorResult(test, output, 'not found in reporter output');
 
   const status = assertionStatus(assertion.status);

@@ -179,6 +179,19 @@ export function validateRepositoryFile(repoPath: string, file: string, requireEx
   if (!inside(root, target)) errors.push('file escapes repository');
   if (!existsSync(target)) {
     if (requireExisting) errors.push('file does not exist');
+    else {
+      let ancestor = dirname(target);
+      while (!existsSync(ancestor)) {
+        const parent = dirname(ancestor);
+        if (parent === ancestor) break;
+        ancestor = parent;
+      }
+      try {
+        if (!inside(root, realpathSync(ancestor))) errors.push('file resolves outside repository through a symlink');
+      } catch (error) {
+        errors.push(`file parent cannot be inspected: ${messageOf(error)}`);
+      }
+    }
     return errors;
   }
   try {

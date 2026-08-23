@@ -3,6 +3,8 @@ import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import { loadConfig, type AugurConfig } from '../config/config.ts';
 import { loadTestsConfig, quotaForDomain } from '../tests/config.ts';
+import { author as authorTests, type AuthorDependencies } from '../tests/author/author.ts';
+import { registerTarget } from '../tests/author/write.ts';
 import { parseBundle } from '../tests/bundle.ts';
 import { flagRun, type FlagClientOptions } from '../tests/flag.ts';
 import { createReport, type Report } from '../tests/report.ts';
@@ -16,6 +18,8 @@ import {
 } from '../tests/registry.ts';
 import { executeRun, type RunDependencies } from '../tests/run.ts';
 import { createRunStore, type RunStore } from '../tests/run-store.ts';
+import { FilePlanStore, type PlanStore } from '../tests/plan-store.ts';
+import { plan as createTestPlan, type TestPlanDependencies } from '../tests/plan/plan.ts';
 import { evaluateRetirement, reviveTest } from '../tests/retirement.ts';
 import {
   runnerIdSchema,
@@ -23,13 +27,16 @@ import {
   testStatusSchema,
   verdictSchema,
   type FlagResult,
+  type AuthorResult,
   type LintResult,
   type PruneResult,
   type RegisterInput,
+  type RegisterFromPlanResult,
   type RunInput,
   type RunQuery,
   type RunRecord,
   type SweepResult,
+  type TestPlan,
   type TestRecord,
   type Verdict,
 } from '../tests/types.ts';
@@ -48,18 +55,17 @@ export interface ServiceCatalog {
 }
 
 export interface PlanInput { repository?: string | undefined; repoPath?: string | undefined; source: unknown }
-export type TestPlan = unknown;
-export type AuthorResult = unknown;
 
 export interface TestOperations {
   listTests(q: { repoPath: string; domain?: string; kind?: string; status?: string }): Promise<TestRecord[]>;
   getTest(q: { repoPath: string; testId: string }): Promise<{ test: TestRecord; recentRuns: RunRecord[] }>;
   catalog(q: { repoPath: string }): Promise<ServiceCatalog>;
   register(q: RegisterInput): Promise<TestRecord>;
-  registerFromPlan(q: { repoPath: string; planId: string }): Promise<TestRecord[]>;
+  registerFromPlan(q: { repoPath: string; planId: string }): Promise<RegisterFromPlanResult>;
   lint(q: { repoPath: string }): Promise<LintResult>;
   plan(q: PlanInput): Promise<TestPlan>;
-  author(q: { planId: string; repoPath: string; author: 'session' | 'claude-cli'; bus?: string | undefined }): Promise<AuthorResult>;
+  getPlan(planId: string): Promise<TestPlan>;
+  author(q: { planId: string; repoPath?: string | undefined; author: 'session' | 'claude-cli'; bus?: string | undefined; before?: string | undefined }): Promise<AuthorResult>;
   run(q: RunInput): Promise<RunRecord>;
   report(runId: string): Promise<Report>;
   verdict(runId: string, verdict: Verdict): Promise<RunRecord>;
@@ -70,9 +76,8 @@ export interface TestOperations {
   prune(q: { repoPath: string; apply?: boolean }): Promise<PruneResult>;
 }
 
-export class NotFoundError extends Error { readonly status = 404; readonly code = 'not_found' }
-export class NotImplementedOperationError extends Error { readonly status = 501; readonly code = 'not_implemented' }
-export class OperationConflictError extends Error { readonly status = 409; readonly code = 'conflict' }
+export class NotFoundError extends Error { readonly status = 404; readonly code = 'not_found'; readonly exitCode = 1 }
+export class OperationConflictError extends Error { readonly status = 409; readonly code = 'conflict'; readonly exitCode = 1 }
 export class InvalidOperationInputError extends Error { readonly status = 400; readonly code = 'invalid_request'; readonly exitCode = 1 }
 
 export interface TestOperationsOptions {
@@ -81,6 +86,9 @@ export interface TestOperationsOptions {
   now?: () => Date;
   flag?: FlagClientOptions;
   runDependencies?: Partial<Omit<RunDependencies, 'config' | 'store'>>;
+  planStore?: PlanStore;
+  planDependencies?: Partial<Omit<TestPlanDependencies, 'planStore' | 'runStore'>>;
+  authorDependencies?: Pick<Partial<AuthorDependencies>, 'claude'>;
 }
 
 const registerSchema = z.object({
@@ -106,6 +114,9 @@ export class DefaultTestOperations implements TestOperations {
   private readonly clock: () => Date;
   private readonly flagOptions: FlagClientOptions;
   private readonly runOverrides: Partial<Omit<RunDependencies, 'config' | 'store'>>;
+  private readonly planStore: PlanStore;
+  private readonly planOverrides: Partial<Omit<TestPlanDependencies, 'planStore' | 'runStore'>>;
+  private readonly authorOverrides: Pick<Partial<AuthorDependencies>, 'claude'>;
 
   constructor(options: TestOperationsOptions = {}) {
     this.config = options.config ?? loadConfig();
@@ -113,6 +124,9 @@ export class DefaultTestOperations implements TestOperations {
     this.clock = options.now ?? (() => new Date());
     this.flagOptions = options.flag ?? {};
     this.runOverrides = options.runDependencies ?? {};
+    this.planStore = options.planStore ?? new FilePlanStore(this.config.dataDir, this.clock);
+    this.planOverrides = options.planDependencies ?? {};
+    this.authorOverrides = options.authorDependencies ?? {};
   }
 
   resolveRepo(input: { repository?: string | undefined; repoPath?: string | undefined }): string {
@@ -206,36 +220,36 @@ export class DefaultTestOperations implements TestOperations {
     return upsertTest(repoPath, record);
   }
 
-  async registerFromPlan(q: { repoPath: string; planId: string }): Promise<TestRecord[]> {
+  async registerFromPlan(q: { repoPath: string; planId: string }): Promise<RegisterFromPlanResult> {
+    planIdSchema.parse(q.planId);
     const repoPath = resolve(q.repoPath);
-    const plan = loadStoredTestPlan(this.config.dataDir, q.planId);
-    const config = loadTestsConfig(repoPath);
-    const registered: TestRecord[] = [];
-    for (const target of parseTargets(plan)) {
-      const path = resolveRepositoryFile(repoPath, target.file);
-      const source = readFileSync(path, 'utf8');
-      if (!source.includes(`plan:${q.planId}`) && !source.includes(target.title)) {
-        throw new Error(`${target.file}: does not contain plan marker or target title ${target.title}`);
-      }
-      registered.push(upsertTest(repoPath, {
-        id: testId(config.repository, target.file, target.title),
-        repository: config.repository,
-        name: target.title,
-        file: target.file,
-        runner: target.runner,
-        kind: target.kind,
-        domains: target.domains,
-        anchors: target.anchors,
-        origin: { type: 'pr', ref: '', planId: q.planId, authoredBy: 'session' },
-        runtime: target.runtime,
-        always: false,
-        status: 'candidate',
-        createdAt: this.clock().toISOString(),
-        passStreak: 0,
-        runs: 0,
-      }));
+    const stored = this.planStore.get(q.planId);
+    if (stored === undefined) throw new NotFoundError(`test plan not found: ${q.planId}`);
+    const plan = stored.plan;
+    const repository = loadTestsConfig(repoPath).repository;
+    if (repository !== plan.repository) {
+      throw new InvalidOperationInputError(`test plan belongs to ${plan.repository}, not ${repository}`);
     }
-    return registered;
+    const registered: TestRecord[] = [];
+    const unmatched: RegisterFromPlanResult['unmatched'] = [];
+    const now = this.clock().toISOString();
+    for (const target of plan.targets) {
+      const id = testId(plan.repository, target.file, target.brief.title);
+      let path: string;
+      try {
+        path = resolveRepositoryFile(repoPath, target.file);
+      } catch {
+        unmatched.push({ key: target.key, file: target.file, title: target.brief.title, reason: 'planned file does not exist' });
+        continue;
+      }
+      const source = readFileSync(path, 'utf8');
+      if (!source.includes(`@augur test:${id}`) && !source.includes(target.brief.title)) {
+        unmatched.push({ key: target.key, file: target.file, title: target.brief.title, reason: 'no matching @augur header or title' });
+        continue;
+      }
+      registered.push(registerTarget({ repoPath, plan, target, authoredBy: 'session', now }));
+    }
+    return { registered, unmatched };
   }
 
   async lint(q: { repoPath: string }): Promise<LintResult> {
@@ -243,12 +257,33 @@ export class DefaultTestOperations implements TestOperations {
     return { valid: errors.length === 0, errors };
   }
 
-  async plan(): Promise<TestPlan> {
-    throw new NotImplementedOperationError('not implemented in this build (Phase T2)');
+  async plan(q: PlanInput): Promise<TestPlan> {
+    const repoPath = this.resolveRepo(q);
+    return await createTestPlan({ repoPath, source: q.source } as Parameters<typeof createTestPlan>[0], {
+      planStore: this.planStore,
+      runStore: await this.store(),
+      ...this.planOverrides,
+    });
   }
 
-  async author(): Promise<AuthorResult> {
-    throw new NotImplementedOperationError('not implemented in this build (Phase T2)');
+  async getPlan(planId: string): Promise<TestPlan> {
+    planIdSchema.parse(planId);
+    const stored = this.planStore.get(planId);
+    if (stored === undefined) throw new NotFoundError(`test plan not found: ${planId}`);
+    return stored.plan;
+  }
+
+  async author(q: { planId: string; repoPath?: string | undefined; author: 'session' | 'claude-cli'; bus?: string | undefined; before?: string | undefined }): Promise<AuthorResult> {
+    planIdSchema.parse(q.planId);
+    const stored = this.planStore.get(q.planId);
+    if (stored === undefined) throw new NotFoundError(`test plan not found: ${q.planId}`);
+    return await authorTests({ ...q, repoPath: q.repoPath ?? stored.repoPath }, {
+      config: this.config,
+      planStore: this.planStore,
+      run: async (input) => await this.run(input),
+      now: this.clock,
+      ...this.authorOverrides,
+    });
   }
 
   async run(q: RunInput): Promise<RunRecord> {
@@ -387,14 +422,6 @@ function readDomainDescriptions(repoPath: string): Record<string, string> {
   return output;
 }
 
-function loadStoredTestPlan(dataDir: string, planId: string): unknown {
-  const safePlanId = planIdSchema.parse(planId);
-  for (const path of [join(dataDir, 'test-plans', `${safePlanId}.json`), join(dataDir, 'plans', `${safePlanId}.json`)]) {
-    if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf8')) as unknown;
-  }
-  throw new NotFoundError(`test plan not found: ${safePlanId}`);
-}
-
 function retirementChanges(
   transitions: ReturnType<typeof evaluateRetirement>['transitions'],
 ): SweepResult['changes'] {
@@ -406,36 +433,6 @@ function prunableFiles(records: readonly TestRecord[]): string[] {
   return [...new Set(records
     .filter((record) => record.status === 'retired' && !activeFiles.has(record.file))
     .map((record) => record.file))].sort();
-}
-
-interface RegistrationTarget {
-  file: string;
-  title: string;
-  runner: TestRecord['runner'];
-  kind: TestRecord['kind'];
-  domains: TestRecord['domains'];
-  anchors: string[];
-  runtime: boolean;
-}
-
-function parseTargets(plan: unknown): RegistrationTarget[] {
-  const root = isRecord(plan) && isRecord(plan.response) ? plan.response : plan;
-  if (!isRecord(root) || !Array.isArray(root.targets)) throw new Error('stored test plan has no targets');
-  return root.targets.map((value, index) => {
-    if (!isRecord(value) || !isRecord(value.domains) || !isRecord(value.brief)) throw new Error(`target ${index} is invalid`);
-    return {
-      file: z.string().parse(value.file),
-      title: z.string().parse(value.brief.title),
-      runner: runnerIdSchema.parse(value.runner),
-      kind: testKindSchema.parse(value.kind),
-      domains: {
-        business: z.array(z.string()).parse(value.domains.business),
-        program: z.array(z.string()).min(1).parse(value.domains.program),
-      },
-      anchors: z.array(z.string()).parse(value.anchors),
-      runtime: typeof value.runtime === 'boolean' ? value.runtime : false,
-    };
-  });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

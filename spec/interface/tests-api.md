@@ -25,10 +25,11 @@ interface TestOperations {
   getTest(q: { repoPath: string; testId: string }): Promise<{ test: TestRecord; recentRuns: RunRecord[] }>;
   catalog(q: { repoPath: string }): Promise<ServiceCatalog>;       // §2.1 の形
   register(q: RegisterInput): Promise<TestRecord>;
-  registerFromPlan(q: { repoPath: string; planId: string }): Promise<TestRecord[]>;
+  registerFromPlan(q: { repoPath: string; planId: string }): Promise<RegisterFromPlanResult>;
   lint(q: { repoPath: string }): Promise<LintResult>;
   plan(q: PlanInput): Promise<TestPlan>;
-  author(q: { planId: string; repoPath: string; author: "session" | "claude-cli"; bus?: string }): Promise<AuthorResult>;
+  getPlan(planId: string): Promise<TestPlan>;
+  author(q: { planId: string; repoPath?: string; author: "session" | "claude-cli"; bus?: string; before?: string }): Promise<AuthorResult>;
   run(q: RunInput): Promise<RunRecord>;
   report(runId: string): Promise<Report>;
   verdict(runId: string, v: Verdict): Promise<RunRecord>;
@@ -64,7 +65,7 @@ worktree (使い捨て) を指すときは `repoPath` を直接渡す。
 | GET | `/v1/tests/:testId?repository=` | 1 件 + 直近 run |
 | POST | `/v1/tests/plans` | body = `PlanInput` (`{ repository\|repoPath, source: { type: "pr", analysis?: PrDiffReview, base? } \| { type: "incident", file } }`) → `TestPlan` |
 | GET | `/v1/tests/plans/:planId` | 計画取得 |
-| POST | `/v1/tests/plans/:planId/author` | body `{ author: "session"\|"claude-cli", bus? }` → `AuthorResult` (session なら briefs) |
+| POST | `/v1/tests/plans/:planId/author` | body `{ repository?, repoPath?, author: "session"\|"claude-cli", bus?, before? }` → `AuthorResult` (repository / repoPath 省略時は保存済み plan の path、session なら briefs) |
 | POST | `/v1/tests/runs` | body = `RunInput` (`{ repository\|repoPath, bundle, head?, bus?, cached? }`) → `RunRecord`。同期。長い場合は `?async=1` で `202 { runId }` を返し `GET /v1/tests/runs/:runId` で追う |
 | GET | `/v1/tests/runs?repository=&head=&since=&status=` | キャッシュ一覧 |
 | GET | `/v1/tests/runs/:runId` | `RunRecord` |
@@ -118,7 +119,7 @@ stdio transport。クライアント設定例 (Claude Code):
 | `augur_tests_list` | `{ repository \| repoPath, domain?, kind?, status? }` | `TestRecord[]` |
 | `augur_tests_plan` | `PlanInput` | `TestPlan` (briefs 込み。セッションはこれを読んでテストを書く) |
 | `augur_tests_register_from_plan` | `{ planId, repoPath }` | 登録結果 |
-| `augur_tests_author` | `{ planId, repoPath, author, bus? }` | `AuthorResult` |
+| `augur_tests_author` | `{ planId, repoPath, author, bus?, before? }` | `AuthorResult` |
 | `augur_tests_run` | `RunInput` | `RunRecord` |
 | `augur_tests_report` | `{ runId, format? }` | 報告 (markdown 既定。LLM が読む前提) |
 | `augur_tests_verdict` | `{ runId, decision, by, note? }` | `RunRecord` |

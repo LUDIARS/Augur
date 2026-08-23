@@ -1,0 +1,74 @@
+{
+  "hits": [
+    {
+      "name": "runTestsCommand",
+      "signature": "async function runTestsCommand(argv: readonly string[], io: CliIo, supplied?: TestOperations): Promise<number>",
+      "filePath": "src/cli/tests/index.ts",
+      "startLine": 35,
+      "endLine": 55,
+      "anchor": "bee7f75ae0451866",
+      "fanIn": 3,
+      "fanOut": 5
+    },
+    {
+      "name": "operationsFor",
+      "signature": "async function operationsFor(baseUrl: string, withVerdict: boolean)",
+      "filePath": "test/tests/flag.test.ts",
+      "startLine": 63,
+      "endLine": 77,
+      "anchor": "bf471391ccf56300",
+      "fanIn": 3,
+      "fanOut": 4
+    },
+    {
+      "name": "<anonymous>",
+      "signature": "() =>",
+      "filePath": "test/tests/operations.test.ts",
+      "startLine": 11,
+      "endLine": 89,
+      "anchor": "9d5e04897949ca84",
+      "fanIn": 0,
+      "fanOut": 9
+    },
+    {
+      "name": "<anonymous>",
+      "signature": "async () =>",
+      "filePath": "test/tests/operations.test.ts",
+      "startLine": 12,
+      "endLine": 33,
+      "anchor": "bab2409cda24ccf8",
+      "fanIn": 0,
+      "fanOut": 7
+    },
+    {
+      "name": "<anonymous>",
+      "signature": "async () =>",
+      "filePath": "test/tests/operations.test.ts",
+      "startLine": 35,
+      "endLine": 54,
+      "anchor": "c93625404f86d893",
+      "fanIn": 0,
+      "fanOut": 5
+    },
+    {
+      "name": "<anonymous>",
+      "signature": "async () =>",
+      "filePath": "test/tests/operations.test.ts",
+      "startLine": 56,
+      "endLine": 67,
+      "anchor": "ec97e5e37567f65e",
+      "fanIn": 0,
+      "fanOut": 4
+    },
+    {
+      "name": "<anonymous>",
+      "signature": "async () =>",
+      "filePath": "test/tests/operations.test.ts",
+      "startLine": 69,
+      "endLine": 88,
+      "anchor": "637748cb5e42b57f",
+      "fanIn": 0,
+      "fanOut": 4
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { createTestOperations, NotImplementedOperationError, type TestOperations } from '../../operations/tests.ts';
+import { createTestOperations, type TestOperations } from '../../operations/tests.ts';
 import { flagValue, parseArgv, UsageError } from '../args.ts';
 import type { CliIo } from '../main.ts';
 import { authorCommand } from './author.ts';
@@ -43,10 +43,6 @@ export async function runTestsCommand(argv: readonly string[], io: CliIo, suppli
   try {
     return await COMMANDS[verb as keyof typeof COMMANDS]({ args, io }, operations);
   } catch (error) {
-    if (error instanceof NotImplementedOperationError) {
-      io.stderr(`${error.message}\n`);
-      return 2;
-    }
     if (hasExitCode(error)) {
       io.stderr(`error: ${messageOf(error)}\n`);
       return error.exitCode;

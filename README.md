@@ -15,7 +15,8 @@ regression and assurance tests from Anatomia's dual-layer domain analysis and
 impact range of a change, keeps a per-repository test registry with a per-domain
 quota, runs bundles over a configurable execution bus, caches results, retires
 long-green tests gradually, and raises a verification flag on Revisor once a run
-has passed and been judged. See [Test Management](./spec/plan/test-management.md).
+has passed and been judged. See [Test Management](./spec/plan/test-management.md)
+and the [plan → author → register → run walk-through](./spec/setup/local-development.md#test-management-authoring-walk-through).
 
 The first CLI caller is Revisor, which asks Augur which checks a specific code change
 deserves at the start of every local pull-request review:

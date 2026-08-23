@@ -47,6 +47,7 @@ export function createMcpServer(
       planId: z.string(),
       author: z.enum(['session', 'claude-cli']),
       bus: z.string().optional(),
+      before: z.string().optional(),
     },
   }, tool(async (input) => await operations.author(input)));
 

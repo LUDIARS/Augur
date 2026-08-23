@@ -71,6 +71,46 @@ npm run golden:update  # regenerate golden expectations (explicit, never automat
 4. Use `node bin/augur.mjs mcp` for stdio clients; it does not open a port.
 5. Use `node bin/augur.mjs tests ...` when no adapter process is needed.
 
+## Test-management authoring walk-through
+
+The deterministic path starts with Anatomia analysis and ends with a registered,
+executed bundle:
+
+```sh
+# 1. Analyze the current branch, check dual-layer ownership, and persist a TestPlan.
+node bin/augur.mjs tests plan --repo . --analyze --json
+
+# 2. Ask the session author for deterministic briefs. This command writes no files.
+node bin/augur.mjs tests author --repo . --plan <planId> --author session --json
+
+# 3. Implement each brief in its planned file. Include either the emitted title or
+#    the marker below (the id is derived from repository + file + title).
+# // @augur test:<testId> plan:<planId>
+
+# 4. Match the authored files to the plan and register them as candidates.
+node bin/augur.mjs tests register --repo . --from-plan <planId> --json
+
+# 5. Run the new candidate ids; passing candidates become active.
+node bin/augur.mjs tests run --repo . --bundle ids:<testId,...> --json
+```
+
+For unattended generation, configure `authoring.model` in `augur.config.json`
+and replace steps 2–5 with:
+
+```sh
+node bin/augur.mjs tests author --repo . --plan <planId> --author claude-cli --json
+```
+
+Claude is invoked once per target, its body is validated before any write, and
+the resulting candidate bundle is run automatically. For incident regressions,
+pass `--before <sha>` to require the new regression to fail in a detached
+pre-fix worktree before it can be promoted. Without `--before`, the record keeps
+the note `pre-fix failure unverified`.
+
+An existing Revisor analysis can replace the first command's `--analyze` with
+`--analysis <pr-review.json>`. If the plan reports `blocked_by_domain` (CLI exit
+4), fix the unclassified anchors in `.anatomia/layers.json` before authoring.
+
 ## Deployment
 
 Deployment is not defined yet.

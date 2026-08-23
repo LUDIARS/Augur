@@ -4,6 +4,7 @@ export const runnerIdSchema = z.enum(['vitest', 'cargo', 'gtest', 'unity', 'comm
 export const testKindSchema = z.enum(['regression', 'assurance', 'guardrail']);
 export const testStatusSchema = z.enum(['candidate', 'active', 'probation', 'retired']);
 export const originTypeSchema = z.enum(['pr', 'incident', 'experience', 'manual']);
+export const testPrioritySchema = z.enum(['critical', 'high', 'medium', 'low']);
 
 const repositoryFileSchema = z.string().min(1).superRefine((value, context) => {
   if (/^(?:[A-Za-z]:[\\/]|[/\\])/.test(value)) {
@@ -113,15 +114,104 @@ export const runRecordSchema = z.object({
   flag: flagResultSchema.optional(),
 }).strict();
 
+export const authoringBriefSchema = z.object({
+  title: z.string().min(1),
+  purpose: z.string().min(1),
+  subject: z.object({
+    symbol: z.string().min(1),
+    file: repositoryFileSchema,
+    line: z.number().int().nonnegative(),
+    signature: z.string().min(1).optional(),
+  }).strict(),
+  risks: z.array(z.enum([
+    'boundary',
+    'memory_safety',
+    'authorization',
+    'state_transition',
+    'concurrency',
+    'contract',
+  ])),
+  exemplars: z.array(z.object({ file: repositoryFileSchema, name: z.string().min(1) }).strict()).max(2),
+  mustAssert: z.array(z.string().min(1)).min(1),
+  mustNot: z.array(z.string().min(1)).min(1),
+  incident: z.object({
+    log: z.string(),
+    failure: z.string(),
+    expectedAfterFix: z.string(),
+  }).strict().optional(),
+}).strict();
+
+export const testTargetSchema = z.object({
+  key: z.string().min(1),
+  kind: testKindSchema,
+  priority: testPrioritySchema,
+  domains: z.object({
+    business: z.array(z.string()),
+    program: z.array(z.string()).min(1),
+  }).strict(),
+  anchors: z.array(z.string()).min(1),
+  impacted: z.array(z.string()),
+  file: repositoryFileSchema,
+  runner: runnerIdSchema,
+  runtime: z.boolean(),
+  brief: authoringBriefSchema,
+  replaces: z.string().optional(),
+}).strict();
+
+export const testPlanSchema = z.object({
+  planId: z.string().startsWith('plan_'),
+  repository: z.string().min(1),
+  headSha: z.string(),
+  source: z.object({
+    type: z.enum(['pr', 'incident', 'experience']),
+    ref: z.string(),
+    analysis: z.string().optional(),
+  }).strict(),
+  status: z.enum(['ready', 'blocked_by_domain', 'empty']),
+  blockers: z.array(z.string()),
+  targets: z.array(testTargetSchema),
+  dropped: z.array(z.object({
+    target: testTargetSchema,
+    reason: z.enum(['quota', 'covered', 'retired_equivalent', 'author_failed']),
+  }).strict()),
+  quota: z.record(z.object({
+    max: z.number().int().positive(),
+    active: z.number().int().nonnegative(),
+    planned: z.number().int().nonnegative(),
+  }).strict()),
+}).strict();
+
+export const registerFromPlanResultSchema = z.object({
+  registered: z.array(testRecordSchema),
+  unmatched: z.array(z.object({ key: z.string(), file: repositoryFileSchema, title: z.string(), reason: z.string() }).strict()),
+}).strict();
+
+export const authorResultSchema = z.object({
+  planId: z.string(),
+  author: z.enum(['session', 'claude-cli']),
+  briefs: z.array(z.object({ key: z.string(), file: repositoryFileSchema, brief: authoringBriefSchema }).strict()),
+  authored: z.array(testRecordSchema),
+  failed: z.array(z.object({ key: z.string(), reason: z.string() }).strict()),
+  dropped: z.array(z.object({ target: testTargetSchema, reason: z.literal('author_failed') }).strict()),
+  runId: z.string().optional(),
+  beforeRunId: z.string().optional(),
+}).strict();
+
 export type RunnerId = z.infer<typeof runnerIdSchema>;
 export type TestKind = z.infer<typeof testKindSchema>;
 export type TestStatus = z.infer<typeof testStatusSchema>;
+export type TestPriority = z.infer<typeof testPrioritySchema>;
 export type TestRecord = z.infer<typeof testRecordSchema>;
 export type Verdict = z.infer<typeof verdictSchema>;
 export type FlagResult = z.infer<typeof flagResultSchema>;
 export type RunResult = z.infer<typeof runResultSchema>;
 export type BundleKind = z.infer<typeof bundleKindSchema>;
 export type RunRecord = z.infer<typeof runRecordSchema>;
+export type AuthoringBrief = z.infer<typeof authoringBriefSchema>;
+export type TestTarget = z.infer<typeof testTargetSchema>;
+export type TestPlan = z.infer<typeof testPlanSchema>;
+export type RegisterFromPlanResult = z.infer<typeof registerFromPlanResultSchema>;
+export type AuthorResult = z.infer<typeof authorResultSchema>;
 
 export interface RunQuery {
   repository?: string | undefined;

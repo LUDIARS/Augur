@@ -9,6 +9,7 @@ import { JsonlRunStore } from '../../src/tests/run-store.ts';
 import { testId } from '../../src/tests/registry.ts';
 import type { TestRecord } from '../../src/tests/types.ts';
 import { augurConfig, makeRepository, record, runRecord } from './fixtures.ts';
+import { analysis, program, stores } from './plan/fixtures.ts';
 
 describe('operations adapter parity', () => {
   it('returns equal JSON through HTTP and CLI for list, runs, and report', async () => {
@@ -69,25 +70,40 @@ describe('operations adapter parity', () => {
     expect(await store.list()).toEqual([]);
   });
 
-  it('maps the two Phase T2 operations to HTTP 501', async () => {
+  it('returns equal plan and session-author JSON through HTTP and CLI', async () => {
     const root = mkdtempSync(join(tmpdir(), 'augur-phase2-'));
     const repo = join(root, 'repo');
-    makeRepository(repo);
-    const operations = createTestOperations({ config: augurConfig(root, repo), store: new JsonlRunStore(join(root, 'runs.jsonl'), { retentionDays: 30, maxRunsPerRepository: 20 }) });
+    makeRepository(repo, []);
+    const fixture = analysis();
+    const analysisPath = join(root, 'analysis.json');
+    writeFileSync(analysisPath, JSON.stringify(fixture), 'utf8');
+    const state = stores(root);
+    const operations = createTestOperations({
+      config: augurConfig(root, repo),
+      store: state.runStore,
+      planStore: state.planStore,
+      planDependencies: { domains: async () => program(), callers: async () => [] },
+    });
     const app = createApp(undefined, operations);
-    const plan = await app.request('/v1/tests/plans', {
+    const cliPlan = await cliJson(['plan', '--repo', repo, '--analysis', analysisPath, '--json'], operations);
+    const planResponse = await app.request('/v1/tests/plans', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ repoPath: repo, source: { type: 'pr' } }),
+      body: JSON.stringify({ repoPath: repo, source: { type: 'pr', analysis: fixture } }),
     });
-    expect(plan.status).toBe(501);
-    expect(await plan.json()).toMatchObject({ error: { code: 'not_implemented' } });
-    const author = await app.request('/v1/tests/plans/plan-id/author', {
+    expect(planResponse.status).toBe(201);
+    expect(await planResponse.json()).toEqual(cliPlan);
+    const planId = (cliPlan as { planId: string }).planId;
+    expect(await json(await app.request(`/v1/tests/plans/${planId}`))).toEqual(cliPlan);
+
+    const cliAuthor = await cliJson(['author', '--repo', repo, '--plan', planId, '--author', 'session', '--json'], operations);
+    const authorResponse = await app.request(`/v1/tests/plans/${planId}/author`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ repoPath: repo, author: 'session' }),
+      body: JSON.stringify({ author: 'session' }),
     });
-    expect(author.status).toBe(501);
+    expect(authorResponse.status).toBe(200);
+    expect(await authorResponse.json()).toEqual(cliAuthor);
   });
 
   it('rejects a requested head that is not the checkout HEAD before execution', async () => {
