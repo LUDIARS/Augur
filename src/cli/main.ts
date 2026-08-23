@@ -12,6 +12,7 @@ import { formatPlanText } from './format.ts';
 import { messageOf, type GatherIo } from './gather.ts';
 import { buildRequest } from './plan.ts';
 import { reviewPlan } from './reviewPlan.ts';
+import { runTestsCommand } from './tests/index.ts';
 
 // Argv dispatch only. Each subcommand assembles a request and calls the engine;
 // no planning logic lives in this layer (spec/interface/cli.md).
@@ -27,6 +28,9 @@ const USAGE = `Usage:
   augur plan [options] [description]     Plan tests and a fix policy for local changes
   augur review-plan --json               Decide which review checks one change needs (stdin JSON)
   augur inject <scan|apply|check|remove> Log injection (see spec/interface/inject-cli.md)
+  augur tests <verb>                     Manage registered tests
+  augur serve                            Start the optional loopback HTTP API
+  augur mcp                              Start the stdio MCP server
 
 Common options:
   --json                 print the response JSON verbatim
@@ -73,6 +77,17 @@ export async function main(argv: readonly string[], io: CliIo): Promise<number> 
     // Awaited rather than returned: a bare `return promise` settles outside this
     // try, so a rejection would escape the exit-code mapping below.
     if (args.command === 'inject') return await runInject(argv.slice(1), io);
+    if (args.command === 'tests') return await runTestsCommand(argv.slice(1), io);
+    if (args.command === 'serve') {
+      const { startServer } = await import('../server.ts');
+      startServer();
+      return 0;
+    }
+    if (args.command === 'mcp') {
+      const { startMcpServer } = await import('../mcp/server.ts');
+      await startMcpServer();
+      return 0;
+    }
     io.stderr(`error: unknown command '${args.command}'\n\n${USAGE}`);
     return 1;
   } catch (error) {

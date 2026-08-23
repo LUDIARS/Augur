@@ -5,7 +5,7 @@
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)src/cli/(?:.*/)?[^/]+$"
+      "pathPattern": "(^|/)src/cli/(?!tests(?:/|\\.ts$))(?:.*/)?[^/]+$"
     },
     {
       "pathPattern": "(^|/)src/config/(?:.*/)?[^/]+$"
@@ -17,7 +17,7 @@
       "pathPattern": "(^|/)bin/[^/]+$"
     },
     {
-      "pathPattern": "(^|/)test/(?:.*/)?[^/]+$"
+      "pathPattern": "(^|/)test/(?!tests/)(?:.*/)?[^/]+$"
     },
     {
       "pathPattern": "(^|/)scripts/(?:.*/)?[^/]+$"

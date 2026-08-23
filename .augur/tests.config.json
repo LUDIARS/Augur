@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "repository": "LUDIARS/Augur",
+  "defaultBus": "local",
+  "runners": {
+    "vitest": {
+      "command": ["npx", "vitest", "run"],
+      "selectorFlag": "-t",
+      "reporter": "json"
+    },
+    "command": {}
+  },
+  "quota": {
+    "default": { "max": 12 },
+    "byPriority": { "critical": 24, "high": 16, "medium": 10, "low": 6 },
+    "domains": {}
+  },
+  "retirement": {
+    "probationAfterDays": 90,
+    "probationAfterPasses": 30,
+    "retireAfterDays": 180,
+    "incidentHorizonDays": 365,
+    "exemptKinds": ["guardrail"],
+    "exemptAlways": true
+  },
+  "impact": { "callerDepth": 2 },
+  "layout": { "newTestPath": "test/unit/{module}.test.ts" },
+  "timeoutMs": 600000
+}

@@ -1,0 +1,23 @@
+{
+  "layers": [
+    { "glob": "src/routes/**", "layer": "presentation" },
+    { "glob": "src/mcp/**", "layer": "presentation" },
+    { "glob": "src/cli/**", "layer": "presentation" },
+    { "glob": "src/operations/**", "layer": "application" },
+    { "glob": "src/tests/run.ts", "layer": "application" },
+    { "glob": "src/tests/run-store.ts", "layer": "infrastructure" },
+    { "glob": "src/tests/**", "layer": "domain-logic" },
+    { "glob": "src/engine/**", "layer": "domain-logic" },
+    { "glob": "src/catalog/**", "layer": "domain-logic" },
+    { "glob": "src/schema/**", "layer": "domain-logic" },
+    { "glob": "src/inject/**", "layer": "domain-logic" },
+    { "glob": "src/bus/**", "layer": "infrastructure" },
+    { "glob": "src/config/**", "layer": "infrastructure" },
+    { "glob": "src/server.ts", "layer": "infrastructure" },
+    { "glob": "src/app.ts", "layer": "infrastructure" },
+    { "glob": "bin/**", "layer": "presentation" },
+    { "glob": "scripts/**", "layer": "infrastructure" },
+    { "glob": "test/**", "layer": "shared" }
+  ],
+  "mergeCouplingThreshold": 1
+}

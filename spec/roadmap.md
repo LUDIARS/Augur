@@ -4,7 +4,7 @@ This document defines the order of implementation for Augur and the acceptance b
 
 Technology choices, module layout, and internal interfaces for these phases are defined in the [Implementation Design](./implementation-design.md).
 
-Status: design is complete for all phases. Phases 0–3 are implemented; Phases 4–6 are designed ([LLM Assistance](./feature/llm-assistance.md), [Plan Persistence](./data/persistence.md), [Daemon-less CLI](./plan/daemonless-cli.md)) and not yet implemented. [Daemon-less CLI](./plan/daemonless-cli.md) step A1 landed with Phase 3; steps A2b and A3, which remove the daemon, are Phase 6 and outstanding.
+Status: design is complete for all phases. Phases 0–3 are implemented; Phases 4–5 are designed ([LLM Assistance](./feature/llm-assistance.md), [Plan Persistence](./data/persistence.md)) and not yet implemented. Phase 6 (daemon removal) is **withdrawn** and replaced by the daemon-optional test-management phases T1–T4 below ([Test Management](./plan/test-management.md), neco 2026-08-23).
 
 **Phase 2 is superseded (neco 2026-07-30).** Augur ships as a daemon-less CLI:
 Phase 3 becomes the delivery surface, and the HTTP server is removed in Phase 6.
@@ -121,7 +121,13 @@ Acceptance:
 - With persistence disabled, plans are byte-identical to the Phase 1 engine output.
 - Store contract tests pass against both store implementations; delete-then-get reports "not found".
 
-## Phase 6 — Daemon Removal
+## Phase 6 — Daemon Removal (withdrawn, neco 2026-08-23)
+
+Superseded by [Test Management](./plan/test-management.md) §1.2: Augur is
+**daemon-optional**. The CLI stays the canonical surface, `augur mcp` is stdio,
+and the existing Hono shell is kept as the opt-in `augur serve`. Step A2b
+(Anatomia bridge → CLI) is done and stays; step A3 (`chore/remove-daemon`) is
+not merged. The original scope is kept below as the record of what was planned.
 
 Design: [Daemon-less CLI](./plan/daemonless-cli.md) step A3.
 
@@ -147,10 +153,29 @@ Acceptance:
   (step A2b).** It is the only HTTP caller and it is a shipped feature; removing
   the server before it moves breaks the Anatomia web dashboard.
 
+## Phases T1–T4 — Test Management
+
+Design: [Test Management](./plan/test-management.md) and the six specs it lists.
+These phases add test authoring, a test registry, bundled execution over a
+configurable bus, a run cache, staged retirement, an HTTP/MCP surface, and the
+verification flag to Revisor. Dependencies: T2 and T3 depend on T1; T4 is a
+Revisor-side change and is independent.
+
+| Phase | Scope | Acceptance |
+| --- | --- | --- |
+| T1 registry / bus / run / cache | `src/tests/`, `src/bus/`, `augur tests list\|register\|lint\|run\|report\|verdict\|flag\|runs\|sweep\|revive\|prune` | Registry round-trips byte-identically; bundle selection and retirement are deterministic under `--now`; `local` and `wrapper` buses run vitest and `command` runners without a shell; run cache honours retention |
+| T2 plan / author | `augur tests plan\|author`, Anatomia `pr-review` / `domains program` / `callers` intake, quota, incident intake, `session` and `claude-cli` authors | `blocked_by_domain` on unclassified anchors; same analysis + registry + config → same plan; quota replacement picks the oldest probation test; incident tests fail before the fix and pass after when `--before` is given |
+| T3 API / MCP | `augur serve` routes under `/v1/tests`, `augur mcp` (stdio), shared `src/operations/` | Every CLI verb maps to one operation; HTTP and MCP return the same JSON as `--json`; writes are loopback-only; concurrent runs on one worktree return 409 |
+| T4 Revisor flag | Revisor repository: `POST /api/local-prs/:id/verification`, derived effects in disposition / merge-risk / board | See [Revisor verification](./interface/revisor-verification.md) §5 |
+
 ## Non-Goals
 
 These stay out of scope for all phases above:
 
-- Executing tests or any shell command on behalf of the caller.
-- Generating or applying code patches.
-- Repository crawling; Augur only sees what a request supplies.
+- Being a test framework. Augur runs the target repository's own runners over a
+  bus and records the outcome; it never bundles vitest, cargo, or gtest itself.
+- Executing anything outside a configured bus, or through a shell.
+- Generating or applying code patches other than test files written by
+  `augur tests author` under the rules in [Test Authoring](./feature/test-authoring.md) §5.3.
+- Repository crawling; planning only sees Anatomia facts, the registry, and the
+  repository's `.augur/` configuration.

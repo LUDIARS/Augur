@@ -13,11 +13,15 @@ export interface ParsedArgs {
 // Flags that may appear more than once; every other repeat is an error, because
 // a silently discarded second `--base` is worse than a message. `--rule` belongs
 // to `augur inject`, whose argv passes through this parser unchanged.
-const REPEATABLE = new Set(['--quality', '--rule']);
+const REPEATABLE = new Set(['--quality', '--rule', '--program', '--business', '--anchor']);
 
 // Flags that take no value. `--dry-run` and `--strict` are `augur inject`'s
 // (spec/interface/inject-cli.md); they are listed so its argv survives parsing.
-const BOOLEAN = new Set(['--no-git', '--json', '--dry-run', '--strict', '--help']);
+const BOOLEAN = new Set([
+  '--no-git', '--json', '--dry-run', '--strict', '--help',
+  '--business-only', '--program-only', '--runtime', '--always', '--cached', '--no-promote',
+  '--for-revisor', '--markdown', '--accept', '--reject', '--apply', '--analyze', '--no-impact',
+]);
 
 export function parseArgv(argv: readonly string[]): ParsedArgs {
   const positionals: string[] = [];
@@ -31,7 +35,9 @@ export function parseArgv(argv: readonly string[]): ParsedArgs {
       else positionals.push(token);
       continue;
     }
-    if (BOOLEAN.has(token)) {
+    const commandBoolean = (command === 'list' || (command === 'tests' && positionals[0] === 'list'))
+      && (token === '--business' || token === '--program');
+    if (BOOLEAN.has(token) || commandBoolean) {
       flags.set(token, ['true']);
       continue;
     }

@@ -20,10 +20,11 @@ bin/
   augur.mjs         # the entry other tools invoke (node bin/augur.mjs <subcommand>);
                     # resolves dist/cli/main.js, else re-execs with --experimental-strip-types
 src/
-  server.ts         # REMOVED in Phase 6 — was: config load, pino logger, loopback serve
-  app.ts            # REMOVED in Phase 6 — was: Hono app assembly
-  config/           # augur.config.json loader; AUGUR_LOG_LEVEL override stays, AUGUR_PORT drops out with the server
-  routes/           # REMOVED in Phase 6 — was: HTTP boundary, zod -> 400 mapping
+  server.ts         # kept (Phase 6 withdrawn): config load, pino logger, loopback serve — reached as `augur serve`
+  app.ts            # Hono app assembly (/v1/plans, /v1/health, /v1/tests/*)
+  config/           # augur.config.json loader (port, buses, repositories, runCache, authoring, dataDir)
+  routes/           # HTTP boundary, zod -> 400 mapping
+    tests.ts        #   /v1/tests/* (spec/interface/tests-api.md) — thin over operations/
   schema/           # Zod schemas mirroring spec/data/core-schema.md, one export per type
   catalog/          # experience goal catalog as data
     common.ts       #   EG-Cxx entries
@@ -48,16 +49,35 @@ src/
     reviewPlan.ts   #   `augur review-plan` (spec/interface/review-plan-cli.md)
     gather.ts       #   git and local-file signal gathering — the only place that shells out
     format.ts       #   text and --json rendering
+    tests/          #   `augur tests <verb>` (spec/interface/tests-cli.md), one file per verb, thin over operations/
   store/            # Phase 5 only: PlanStore interface, sqlite + memory implementations (spec/data/persistence.md)
+  operations/       # T3: the one operations layer CLI / HTTP / MCP share (spec/interface/tests-api.md §1)
+    tests.ts        #   TestOperations: listTests, catalog, plan, author, run, report, verdict, flag, listRuns
+  tests/            # T1/T2: test lifecycle (spec/feature/test-lifecycle.md, test-authoring.md, data/test-registry.md)
+    registry.ts     #   .augur/tests.jsonl load/save/upsert, history-field protection
+    config.ts       #   .augur/tests.config.json (quota, runners, retirement, impact, layout)
+    bundle.ts       #   deterministic bundle selection (pr / domain / all / ids) with reasons
+    run.ts          #   run orchestration: bundle -> runner invocations -> bus -> RunRecord
+    run-store.ts    #   RunStore interface, sqlite (node:sqlite) + jsonl implementations, retention sweep
+    retirement.ts   #   active -> probation -> retired under --now
+    report.ts       #   text / json / markdown report for the judge
+    flag.ts         #   Revisor external verification client (spec/interface/revisor-verification.md)
+    runners/        #   Runner interface; vitest.ts (json reporter), command.ts (exit code), presets for cargo/gtest/unity
+    anatomia.ts     #   spawn of the Anatomia CLI (pr-review / domains program / callers), AUGUR_ANATOMIA_DIR
+    plan/           #   T2: plan.ts, targets.ts, priority.ts, quota.ts, briefs.ts, incident.ts
+    author/         #   T2: author.ts, session.ts (briefs only), claude-cli.ts (claude -p, pinned model), write.ts
+  bus/              # T1: Bus interface; local.ts (spawn, no shell), wrapper.ts (argv template, env allow-list)
+  mcp/              # T3: `augur mcp` stdio server, tools 1:1 with operations
 test/
+  tests/            # T1–T3: registry round-trip, bundle/retirement determinism, runner parsing, bus no-shell, operations parity
   unit/             # engine internals per module, config loader
   golden/           # cases/*.json request/response pairs
   cli/              # subcommand behaviour: flag surface, exit codes, stdout discipline
-  api/              # REMOVED in Phase 6 — was: in-process Hono app tests
+  api/              # in-process Hono app tests (/v1/plans and /v1/tests/*)
   safety/           # no-exec, no-fs-mutation guarantees (engine purity + shell no-spawn)
 ```
 
-Dependency direction is one-way: `cli` → `engine` → `catalog`/`schema`. The engine imports nothing from `cli` or `llm`; LLM assistance plugs in through interfaces defined by the engine (see below). This layout is mirrored by `spec/design.md` I-3; update both together.
+Dependency direction is one-way: `cli` / `routes` / `mcp` → `operations` → `tests` → `bus`, and `cli` → `engine` → `catalog`/`schema`. `tests/plan` may call `engine` (guardrail targets) but `engine` never imports from `tests`. The engine imports nothing from `cli` or `llm`; LLM assistance plugs in through interfaces defined by the engine (see below). This layout is mirrored by `spec/design.md` I-3; update both together.
 
 `reviewPlan.ts` maps a caller's change profile onto a `CreatePlanRequest` and
 reduces the resulting plan to stage decisions. **The engine gains no knowledge of

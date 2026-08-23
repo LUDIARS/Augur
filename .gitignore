@@ -6,4 +6,12 @@ coverage/
 !.env.example
 
 # Anatomia のローカル状態 (ドメイン定義の正本は spec/domains/)
-.anatomia/
+.anatomia/*
+!.anatomia/layers.json
+
+# Augur 実行キャッシュ (マシン固有。テスト出力・worktree の絶対パスを含む)
+# 台帳 .augur/tests.jsonl と .augur/tests.config.json は追跡する
+# → spec/data/test-registry.md §1
+.augur-data/
+.augur/tests.jsonl.lock
+.augur/tests.jsonl.*.tmp

@@ -1,4 +1,18 @@
 {
   "port": 4210,
-  "logLevel": "info"
+  "logLevel": "info",
+  "buses": {
+    "local": { "type": "local", "env": ["CI", "NODE_OPTIONS"] }
+  },
+  "repositories": {
+    "LUDIARS/Augur": "."
+  },
+  "runCache": {
+    "retentionDays": 30,
+    "maxRunsPerRepository": 200
+  },
+  "dataDir": ".augur-data",
+  "authoring": {
+    "model": "claude-sonnet-4-5"
+  }
 }

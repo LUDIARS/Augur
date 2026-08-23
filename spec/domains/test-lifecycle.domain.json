@@ -1,0 +1,38 @@
+{
+  "name": "test-lifecycle",
+  "description": "テストの作成・台帳・バンドル実行・結果キャッシュ・退役・Revisor への保証フラグ。 Anatomia 二層ドメインと影響範囲を入力にテストを計画し、 バス越しに実行して管理する。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/tests/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/bus/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/operations/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/mcp/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/routes/tests(?:/.*)?\\.ts$"
+    },
+    {
+      "pathPattern": "(^|/)src/cli/tests(?:/.*)?\\.ts$"
+    },
+    {
+      "pathPattern": "(^|/)test/tests/(?:.*/)?[^/]+$"
+    }
+  ],
+  "specRefs": [
+    "spec/plan/test-management.md",
+    "spec/feature/test-lifecycle.md",
+    "spec/feature/test-authoring.md",
+    "spec/data/test-registry.md",
+    "spec/interface/tests-cli.md",
+    "spec/interface/tests-api.md",
+    "spec/interface/revisor-verification.md"
+  ]
+}

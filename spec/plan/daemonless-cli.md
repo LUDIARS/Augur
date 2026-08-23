@@ -3,6 +3,12 @@
 Decision and migration plan for turning Augur from a loopback HTTP service into
 a command-line tool with no resident process (neco 2026-07-30).
 
+> **Superseded in part (neco 2026-08-23).** [Test Management](./test-management.md)
+> §1.2 revises this to *daemon-optional*: the CLI remains the canonical surface
+> and MCP is stdio, but the Hono shell is kept as the opt-in `augur serve` and
+> step A3 (`chore/remove-daemon`) is withdrawn. Steps A1 and A2b stand. The rest
+> of this document is kept as the record of the 2026-07-30 decision.
+
 ## Decision
 
 **Augur ships as a CLI. There is no Augur daemon.**

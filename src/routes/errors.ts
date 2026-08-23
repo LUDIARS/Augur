@@ -6,7 +6,7 @@ export function invalidRequest(c: Context, message: string): Response {
 }
 
 export function internalError(c: Context): Response {
-  return c.json({ error: { code: "internal_error", message: "Unexpected planning error" } }, 500);
+  return c.json({ error: { code: "internal_error", message: "Unexpected Augur error" } }, 500);
 }
 
 export function validationMessage(error: ZodError): string {

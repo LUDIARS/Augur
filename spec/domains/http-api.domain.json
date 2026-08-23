@@ -5,7 +5,7 @@
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)src/routes/(?:.*/)?[^/]+$"
+      "pathPattern": "(^|/)src/routes/(?!tests(?:/|\\.ts$))(?:.*/)?[^/]+$"
     },
     {
       "pathPattern": "(^|/)src/server\\.ts$"
