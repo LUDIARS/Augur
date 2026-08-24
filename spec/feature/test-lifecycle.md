@@ -72,7 +72,7 @@ interface Bus {
 - `timeoutMs` 超過で子プロセスツリーを kill し `timedOut: true`。結果は `error`。
 - 環境変数は allow-list (`env` 配列) だけ通す。`AUGUR_*` は常に落とす (再帰防止)。
 
-### 3.2 ランナー
+### 3.2 ランナー (SPEC-TEST-LIFECYCLE-VITEST-RUNNER)
 
 `src/tests/runners/` — `Runner` インターフェース。
 
@@ -88,7 +88,7 @@ interface Runner {
 
 | runner | 起動 | 解析 |
 |---|---|---|
-| `vitest` | `npx vitest run <files…> --reporter=json` (selector があれば `-t`) | JSON reporter の `testResults[].assertionResults[]` を (file, fullName) で台帳へ突き合わせ。見つからない台帳テストは `error` ("not found in reporter output") |
+| `vitest` | `node node_modules/vitest/vitest.mjs run <files…> --reporter=json` (selector があれば `-t`)。設定された `npx vitest` 前置も同形へ正規化する | JSON reporter の `testResults[].assertionResults[]` を (file, fullName) で台帳へ突き合わせ。見つからない台帳テストは `error` ("not found in reporter output") |
 | `command` | `TestRecord.command` をそのまま | exit 0 → passed、それ以外 failed、起動失敗 → error |
 | `cargo` / `gtest` / `unity` | T1 では `command` のプリセット (argv を組むだけ) | exit code 解析のみ。構造化解析は後続 |
 

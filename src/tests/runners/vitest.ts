@@ -22,10 +22,26 @@ interface VitestFileResult {
 
 interface VitestReport { testResults?: unknown }
 
+/**
+ * The bus spawns without a shell (spec feature/test-lifecycle.md §3.1), and on
+ * Windows `npx` is a `.cmd` shim that only a shell can execute — `spawn('npx')`
+ * fails with ENOENT. The repository-local vitest entry run through `node`
+ * (a real executable on every platform) needs no shell, so it is the default,
+ * and a configured `npx vitest` prefix is rewritten to it rather than left to
+ * fail on Windows only.
+ */
+function normalizeVitestCommand(command: readonly string[]): string[] {
+  if (command[0] === 'npx' && command[1] === 'vitest') {
+    return ['node', 'node_modules/vitest/vitest.mjs', ...command.slice(2)];
+  }
+  return [...command];
+}
+
 export const vitestRunner: Runner = {
   id: 'vitest',
+  /** @implements SPEC-TEST-LIFECYCLE-VITEST-RUNNER */
   buildInvocations(tests: readonly TestRecord[], config: RunnerConfig): Invocation[] {
-    const base = config.command ?? ['npx', 'vitest', 'run'];
+    const base = normalizeVitestCommand(config.command ?? ['node', 'node_modules/vitest/vitest.mjs', 'run']);
     const selectorFlag = config.selectorFlag ?? '-t';
     const invocations: Invocation[] = [];
     const unselected = tests.filter((test) => test.selector === undefined);

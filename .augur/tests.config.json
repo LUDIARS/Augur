@@ -4,7 +4,7 @@
   "defaultBus": "local",
   "runners": {
     "vitest": {
-      "command": ["npx", "vitest", "run"],
+      "command": ["node", "node_modules/vitest/vitest.mjs", "run"],
       "selectorFlag": "-t",
       "reporter": "json"
     },

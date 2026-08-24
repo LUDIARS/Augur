@@ -114,7 +114,7 @@ Augur はそれを読んでプロセスを起動し、ファイルを消す。�
   "repository": "LUDIARS/Augur",
   "defaultBus": "local",
   "runners": {
-    "vitest": { "command": ["npx", "vitest", "run"], "selectorFlag": "-t", "reporter": "json" },
+    "vitest": { "command": ["node", "node_modules/vitest/vitest.mjs", "run"], "selectorFlag": "-t", "reporter": "json" },
     "command": {}
   },
   "quota": {
@@ -174,6 +174,10 @@ Augur はそれを読んでプロセスを起動し、ファイルを消す。�
 |---|---|
 | `local` | 対象 worktree を cwd に、runner の argv を `spawn` (shell 無し) |
 | `wrapper` | `command` の argv をテンプレート展開して spawn。`{cmd}` = runner argv を POSIX shell-quote した 1 文字列、`{cwd}` = direct argv 用の worktree 絶対パス、`{cwd_posix}` = shell 文字列用に POSIX quote した `/mnt/e/...` 形式、`{env}` は使わず `env` 配列に列挙した変数だけを子プロセスへ通す |
+
+runner コマンドに `npx` を書かない: バスは shell 無しで spawn し、Windows の `npx` は
+`.cmd` シムなので ENOENT になる。既定の vitest 起動はリポローカルの
+`node node_modules/vitest/vitest.mjs` (vitest runner は `npx vitest` 前置を同形へ書き換える)。
 
 バス型は 2 つで始める。docker / ssh / WSL / Excubitor 配下の環境はすべて `wrapper` で
 表現できる (Augur は個別環境を知らない)。

@@ -13,6 +13,16 @@ describe('vitest JSON runner', () => {
     tests: [record()],
   };
 
+  it('builds shell-free invocations: repo-local vitest by default and npx rewritten to it', () => {
+    const tests = [record()];
+    const byDefault = vitestRunner.buildInvocations(tests, {});
+    expect(byDefault[0]?.argv.slice(0, 3)).toEqual(['node', 'node_modules/vitest/vitest.mjs', 'run']);
+    const fromNpx = vitestRunner.buildInvocations(tests, { command: ['npx', 'vitest', 'run'] });
+    expect(fromNpx[0]?.argv.slice(0, 3)).toEqual(['node', 'node_modules/vitest/vitest.mjs', 'run']);
+    const explicit = vitestRunner.buildInvocations(tests, { command: ['node', 'tools/vitest.mjs', 'run'] });
+    expect(explicit[0]?.argv.slice(0, 3)).toEqual(['node', 'tools/vitest.mjs', 'run']);
+  });
+
   it('matches reporter assertions by file and fullName', () => {
     const report = {
       testResults: [{
