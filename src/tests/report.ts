@@ -1,14 +1,25 @@
+import { latestText, phaseBreakdown } from '../contracts/acceptance.ts';
+import type { ContractsSummary } from '../contracts/aggregate.ts';
+import { summaryLine } from '../contracts/report-format.ts';
 import type { RunRecord, TestRecord } from './types.ts';
 
-export type Report = RunRecord & { tests: Record<string, TestRecord> };
+export type Report = RunRecord & {
+  tests: Record<string, TestRecord>;
+  /** Absent for a repository that declares no contracts (§6.3). */
+  contracts?: ContractsSummary;
+};
 
-export function createReport(run: RunRecord, records: readonly TestRecord[]): Report {
+export function createReport(
+  run: RunRecord,
+  records: readonly TestRecord[],
+  contracts?: ContractsSummary | undefined,
+): Report {
   const byId = new Map(records.map((record) => [record.id, record]));
   const tests = Object.fromEntries(run.bundle.testIds.flatMap((id) => {
     const test = byId.get(id);
     return test === undefined ? [] : [[id, test]];
   }));
-  return { ...run, tests };
+  return { ...run, tests, ...(contracts === undefined ? {} : { contracts }) };
 }
 
 export function formatReportText(report: Report): string {
@@ -28,9 +39,24 @@ export function formatReportText(report: Report): string {
     }
     lines.push('');
   }
+  if (report.contracts !== undefined) lines.push(...contractLines(report.contracts), '');
   lines.push(`Summary: ${report.summary.passed} passed, ${report.summary.failed} failed, ${report.summary.error} error, ${report.summary.skipped} skipped`);
   if (report.verdict !== undefined) lines.push(`Verdict: ${report.verdict.decision} by ${report.verdict.by}`);
   return `${lines.join('\n')}\n`;
+}
+
+// One line per contract, beside the test results rather than in a separate
+// command: the judge reads both on one screen (§6.3).
+function contractLines(contracts: ContractsSummary): string[] {
+  const lines = ['Contracts'];
+  for (const entry of contracts.contracts) {
+    const detail = entry.state === 'violated'
+      ? ` (${phaseBreakdown(entry)}) ${latestText(entry)}`
+      : entry.state === 'uncovered' ? ` (${entry.uncoveredReason ?? 'not-called'})` : '';
+    lines.push(`  ${entry.state.padEnd(9)} ${entry.id.padEnd(6)} ${entry.symbol} calls ${entry.calls} violations ${entry.violationTotal}${detail}`);
+  }
+  lines.push(`  ${summaryLine(contracts)}`);
+  return lines;
 }
 
 export function formatReportMarkdown(report: Report): string {
@@ -48,6 +74,14 @@ export function formatReportMarkdown(report: Report): string {
       if (result.failureMessage !== undefined) lines.push(`  - ${result.failureMessage.replaceAll('\n', ' ')}`);
     }
     lines.push('');
+  }
+  if (report.contracts !== undefined) {
+    lines.push('### Contracts', '');
+    for (const entry of report.contracts.contracts) {
+      const detail = entry.state === 'violated' ? ` — ${latestText(entry)}` : '';
+      lines.push(`- ${entry.state} \`${entry.id}\` \`${entry.symbol}\` calls ${entry.calls}, violations ${entry.violationTotal}${detail}`);
+    }
+    lines.push('', summaryLine(report.contracts), '');
   }
   lines.push(`Passed ${report.summary.passed}/${report.summary.total}; failed ${report.summary.failed}; errors ${report.summary.error}; skipped ${report.summary.skipped}.`);
   return `${lines.join('\n')}\n`;

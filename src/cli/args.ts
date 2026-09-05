@@ -17,11 +17,13 @@ const REPEATABLE = new Set(['--quality', '--rule', '--program', '--business', '-
 
 // Flags that take no value. `--dry-run` and `--strict` are `augur inject`'s
 // (spec/interface/inject-cli.md); they are listed so its argv survives parsing.
+// `--all` / `--acceptance` are `augur contracts report`'s; `--bundle all` passes
+// "all" as a value and is unaffected.
 const BOOLEAN = new Set([
   '--no-git', '--json', '--dry-run', '--strict', '--help',
   '--business-only', '--program-only', '--runtime', '--always', '--cached', '--no-promote',
   '--for-revisor', '--markdown', '--accept', '--reject', '--apply', '--analyze', '--no-impact',
-  '--include-existing',
+  '--include-existing', '--all', '--acceptance',
 ]);
 
 export function parseArgv(argv: readonly string[]): ParsedArgs {

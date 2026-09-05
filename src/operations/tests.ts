@@ -6,7 +6,8 @@ import { loadTestsConfig, quotaForDomain } from '../tests/config.ts';
 import { author as authorTests, type AuthorDependencies } from '../tests/author/author.ts';
 import { registerTarget } from '../tests/author/write.ts';
 import { parseBundle } from '../tests/bundle.ts';
-import { flagRun, type FlagClientOptions } from '../tests/flag.ts';
+import { contractTotals, contractsForRun } from '../tests/contracts.ts';
+import { assertFlagPreconditions, flagRun, type FlagClientOptions } from '../tests/flag.ts';
 import { createReport, type Report } from '../tests/report.ts';
 import {
   lintRegistry,
@@ -306,7 +307,7 @@ export class DefaultTestOperations implements TestOperations {
 
   async report(runId: string): Promise<Report> {
     const run = await this.requireRun(runId);
-    return createReport(run, loadRegistry(run.repoPath));
+    return createReport(run, loadRegistry(run.repoPath), await contractsForRun(run));
   }
 
   async verdict(runId: string, verdict: Verdict): Promise<RunRecord> {
@@ -318,7 +319,10 @@ export class DefaultTestOperations implements TestOperations {
 
   async flag(runId: string, target: { pullRequestId: string }): Promise<FlagResult> {
     const run = await this.requireRun(runId);
-    const flag = await flagRun(run, target.pullRequestId, this.flagOptions);
+    // Reject an ineligible run before walking its repository and logs. This also
+    // keeps flagging fail-fast when the evidence directory is unexpectedly large.
+    assertFlagPreconditions(run);
+    const flag = await flagRun(run, target.pullRequestId, this.flagOptions, contractTotals(await contractsForRun(run)));
     await (await this.store()).put({ ...run, flag });
     return flag;
   }

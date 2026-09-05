@@ -1,3 +1,4 @@
+import type { ContractTotals } from './contracts.ts';
 import type { FlagResult, RunRecord } from './types.ts';
 
 export class FlagPreconditionError extends Error {
@@ -18,6 +19,7 @@ export async function flagRun(
   run: RunRecord,
   pullRequest: string,
   options: FlagClientOptions = {},
+  contracts?: ContractTotals | undefined,
 ): Promise<FlagResult> {
   assertFlagPreconditions(run);
   const request = options.fetch ?? fetch;
@@ -37,7 +39,10 @@ export async function flagRun(
     decision: 'accept',
     by: run.verdict!.by,
     at: run.verdict!.at,
-    summary: run.summary,
+    // The contract counts ride inside `summary` so Revisor renders them beside
+    // the test totals; a repository without contracts sends the field unchanged
+    // (spec/interface/revisor-verification.md §2).
+    summary: contracts === undefined ? run.summary : { ...run.summary, contracts },
     bundle: { kind: run.bundle.kind, testIds: run.bundle.testIds },
     reportUrl: null,
     ...(run.verdict!.note === undefined ? {} : { note: run.verdict!.note }),

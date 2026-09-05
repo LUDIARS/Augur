@@ -30,6 +30,7 @@ const USAGE = `Usage:
   augur review-plan --json               Decide which review checks one change needs (stdin JSON)
   augur inject <scan|apply|check|remove> Log injection (see spec/interface/inject-cli.md)
   augur contracts lint                   Check augur.contracts.json against the sources
+  augur contracts report                 Aggregate weaver contract events (--since <iso> | --all)
   augur tests <verb>                     Manage registered tests
   augur serve                            Start the optional loopback HTTP API
   augur mcp                              Start the stdio MCP server

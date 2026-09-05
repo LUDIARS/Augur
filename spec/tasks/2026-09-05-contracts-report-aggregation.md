@@ -4,7 +4,7 @@ project: Augur
 kind: 実装
 created: 2026-09-05
 ---
-# C3 `augur contracts report` 集計と verdict / 保証フラグへの合流
+# C3 `augur contracts report` 集計と verdict / 保証フラグへの合流 (SPEC-CONTRACTS-REPORT-AGGREGATION)
 
 ## 目的
 [設計書](../plan/2026-09-05-live-contract-testing.md) §6 の C3。

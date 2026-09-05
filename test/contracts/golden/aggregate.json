@@ -1,0 +1,102 @@
+{
+  "window": {
+    "since": "2026-09-05T00:00:00.000Z",
+    "until": null
+  },
+  "totals": {
+    "covered": 1,
+    "violated": 1,
+    "uncovered": 1
+  },
+  "diagnostics": {
+    "events": 5,
+    "matched": 5,
+    "foreign": 0,
+    "outOfWindow": 0,
+    "undated": 0
+  },
+  "contracts": [
+    {
+      "id": "C-1",
+      "criterion": "C-1 covered one",
+      "symbol": "alpha",
+      "file": "src/a.ts",
+      "sample": 1,
+      "markerId": "m1",
+      "state": "covered",
+      "calls": 2,
+      "observed": 2,
+      "violations": {
+        "pre": 0,
+        "post": 0,
+        "postThrow": 0,
+        "invariant": 0,
+        "predicate": 0
+      },
+      "violationTotal": 0,
+      "latestReasons": [],
+      "firstSeen": "2026-09-05T00:00:00.000Z",
+      "lastSeen": "2026-09-05T00:00:05.000Z",
+      "uncoveredReason": null
+    },
+    {
+      "id": "C-2",
+      "criterion": "C-2 violated one",
+      "symbol": "beta",
+      "file": "src/b.ts",
+      "sample": 1,
+      "markerId": "m2",
+      "state": "violated",
+      "calls": 3,
+      "observed": 1,
+      "violations": {
+        "pre": 1,
+        "post": 1,
+        "postThrow": 0,
+        "invariant": 0,
+        "predicate": 0
+      },
+      "violationTotal": 2,
+      "latestReasons": [
+        {
+          "phase": "pre",
+          "reason": "unknown kind",
+          "observedAt": "2026-09-05T00:00:03.000Z",
+          "where": "src/b.ts:88"
+        },
+        {
+          "phase": "post",
+          "reason": "registry shrank",
+          "observedAt": "2026-09-05T00:00:02.000Z",
+          "where": "src/b.ts:88"
+        }
+      ],
+      "firstSeen": "2026-09-05T00:00:01.000Z",
+      "lastSeen": "2026-09-05T00:00:03.000Z",
+      "uncoveredReason": null
+    },
+    {
+      "id": "C-3",
+      "criterion": "C-3 uncovered one",
+      "symbol": "gamma",
+      "file": "src/c.ts",
+      "sample": 1,
+      "markerId": "m3",
+      "state": "uncovered",
+      "calls": 0,
+      "observed": 0,
+      "violations": {
+        "pre": 0,
+        "post": 0,
+        "postThrow": 0,
+        "invariant": 0,
+        "predicate": 0
+      },
+      "violationTotal": 0,
+      "latestReasons": [],
+      "firstSeen": null,
+      "lastSeen": null,
+      "uncoveredReason": "not-called"
+    }
+  ]
+}

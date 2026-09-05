@@ -63,6 +63,41 @@ augur contracts lint [--project <dir>] [--json]
 
 Checks `augur.contracts.json` on its own, without touching any source: duplicate ids (rejected by the schema), every `file:symbol` resolving to a top-level declaration, and every predicate module existing with an object-literal default export. Exit 0 when clean, 1 when the manifest is unreadable or any finding is reported. `--json` emits `{ project, contracts, findings: [{ contractId, code, file, symbol, message }] }`.
 
+## `augur contracts report`
+
+```text
+augur contracts report [--project <dir>] [--logs <dir>] (--since <iso> | --all)
+                       [--acceptance] [--json | --markdown]
+```
+
+Aggregates the weaver JSONL the contract wrappers wrote into one row per contract:
+`covered` (at least one `contract observed`, no violation), `violated` (at least one
+`contract violated` or `contract predicate threw`, with per-phase counts and the
+newest three reasons), or `uncovered` (neither, shown as `not-injected` when the
+source carries no marker and `not-called` when it does).
+
+Only events whose `ctx.id` matches the marker `check` resolves from the *current*
+source are counted, so another repository's same-named contract — or a marker a
+later edit replaced — is never read as evidence. `--logs` defaults to the runtime's
+own resolution: `VESTIGIUM_LOGS_DIR`, then `<project>/logs`; every `*.jsonl` in that
+directory is read in filename order.
+
+Exactly one of `--since <iso>` / `--all` is required: without a lower bound a
+violation from a previous delegation would decide this one. Events with no readable
+timestamp are counted in `diagnostics.undated` and reported as a warning on stderr,
+but a bounded window excludes them from the aggregation.
+
+`--acceptance` emits Concordia's `acceptance_report` shape,
+`[{ criterion, met, note }]`, with `criterion` reproduced byte-for-byte from the
+manifest and `met` true only for `covered`. It cannot be combined with `--all` or
+`--markdown`, and it is a usage error (exit 1) when any contract sets `sample < 1`,
+because sampling makes `uncovered` indistinguishable from "never called".
+
+`--json` emits `{ project, logs, window, totals, diagnostics, contracts }`. The same
+JSONL and manifest always produce a byte-identical document. Human output is one
+line per contract (state, id, symbol, calls, violations, latest reason) followed by a
+`summary:` line.
+
 ## Exit Codes
 
 | Code | Meaning |

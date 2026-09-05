@@ -39,12 +39,20 @@ Content-Type: application/json
   "decision": "accept",
   "by": "neco",
   "at": "2026-08-23T00:00:00.000Z",
-  "summary": { "total": 12, "passed": 12, "failed": 0, "skipped": 0, "error": 0 },
+  "summary": { "total": 12, "passed": 12, "failed": 0, "skipped": 0, "error": 0,
+               "contracts": { "covered": 3, "violated": 0, "uncovered": 1 } },
   "bundle": { "kind": "pr", "testIds": ["t-…"] },
   "reportUrl": null,
   "note": "…"
 }
 ```
+
+`summary.contracts` は[オンライブ契約テスト](../plan/2026-09-05-live-contract-testing.md)
+§6.3 の追補。対象リポジトリに `augur.contracts.json` がある場合だけ付き、run の
+`[startedAt, finishedAt]` に入る契約観測の内訳 (`covered` / `violated` / `uncovered`) を
+表す。Revisor 側は**表示のみ**で、disposition ロジックは変えない。`violated > 0` でも
+フラグの可否は人間の verdict 次第で、「判断の無い自動フラグは作らない」原則 (§1) は
+そのまま。契約ファイルが無いリポジトリからは従来通りこのキーの無い `summary` が届く。
 
 `:id` は local PR の id (uuid)。`Rv#<number>` からの解決は Augur 側が
 `GET /api/local-prs?view=summary&state=open` で行う (`--pr` は id でも `#番号` でもよい)。

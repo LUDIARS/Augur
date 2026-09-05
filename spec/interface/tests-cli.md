@@ -7,7 +7,7 @@ status: planned
 tags:
   - test-lifecycle
   - cli
-updated: 2026-08-23
+updated: 2026-09-05
 ---
 
 # `augur tests …` (CLI)
@@ -54,6 +54,24 @@ shell 不要、`--json` で機械可読、exit code は下表。
 `run` の text 出力は既存 cli.md の Text Output Format に倣い、見出し → ドメイン別 →
 1 テスト 1 行 (`✔ / ✘ / – / !`、id、name、duration)。末尾に `run: <runId>`。
 
+## 契約観測の合流 (`report` / `flag`)
+
+[オンライブ契約テスト](../plan/2026-09-05-live-contract-testing.md) §6.3 の合流点。
+対象リポジトリに `augur.contracts.json` がある場合だけ現れ、無いリポジトリでは
+節そのものを出さない (空節を出さない)。
+
+- `report <runId>` に `contracts` 節を足す。窓は run の `[startedAt, finishedAt]` で、
+  集計内容は [`augur contracts report`](./inject-cli.md#augur-contracts-report) と同一
+  (同じ集計関数を通す)。text / markdown は 1 契約 1 行、`--json` は
+  `contracts: { window, totals, diagnostics, contracts[] }`。
+  判断者はテスト結果と契約観測を 1 画面で読む。
+- `flag <runId> --pr <id>` が Revisor へ送る `summary` に
+  `contracts: { covered, violated, uncovered }` を足す
+  ([revisor-verification.md](./revisor-verification.md) §2)。契約ファイルが無ければ
+  このキーは付かない。
+- 契約ファイルやログが読めない場合、節を落とすだけで `report` / `flag` は失敗しない。
+  報告は判断の材料であって gate ではない (設計書 §2.5)。
+
 ## Exit codes
 
 | code | 意味 |
@@ -79,3 +97,4 @@ shell 不要、`--json` で機械可読、exit code は下表。
 - [tests-api.md](./tests-api.md)
 - [../feature/test-lifecycle.md](../feature/test-lifecycle.md)
 - [../feature/test-authoring.md](../feature/test-authoring.md)
+- [../plan/2026-09-05-live-contract-testing.md](../plan/2026-09-05-live-contract-testing.md)

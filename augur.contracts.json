@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "contractsDir": "contracts",
+  "importFrom": "@ludiars/log-weaver",
+  "contracts": [
+    {
+      "id": "C3-1",
+      "criterion": "C3-1 aggregateContracts(events, contracts): 同じ入力から byte-identical な集計、指定期間かつ現行 marker id の observed 0 件は uncovered、violated または predicate threw 1 件以上は violated",
+      "symbol": "aggregateContracts",
+      "file": "src/contracts/aggregate.ts",
+      "module": "contracts/aggregate.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C3-2",
+      "criterion": "C3-2 toAcceptanceReport(summary): covered のみ met: true",
+      "symbol": "toAcceptanceReport",
+      "file": "src/contracts/acceptance.ts",
+      "module": "contracts/acceptance.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    }
+  ]
+}
