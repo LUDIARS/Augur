@@ -168,6 +168,24 @@ Revisor-side change and is independent.
 | T3 API / MCP | `augur serve` routes under `/v1/tests`, `augur mcp` (stdio), shared `src/operations/` | Every CLI verb maps to one operation; HTTP and MCP return the same JSON as `--json`; writes are loopback-only; concurrent runs on one worktree return 409 |
 | T4 Revisor flag | Revisor repository: `POST /api/local-prs/:id/verification`, derived effects in disposition / merge-risk / board | See [Revisor verification](./interface/revisor-verification.md) §5 |
 
+## Phases C1–C5 — Live Contract Testing
+
+Design: [契約プログラミングによる委託受け入れとオンライブテスト](./plan/2026-09-05-live-contract-testing.md).
+Acceptance criteria for delegated work are written as contracts (pre / post /
+invariant), a marker-tagged `contract-wrap` injection rule wraps the newly
+implemented functions, and `augur contracts report` turns the weaver events those
+wrappers emit into the `covered / violated / uncovered` material behind a verdict.
+The wrapper only observes — synchronous results/errors and asynchronous settlements pass through unchanged — and
+`augur inject remove` restores the source byte-for-byte.
+
+| Phase | Repository | Scope | Depends on |
+| --- | --- | --- | --- |
+| C1 runtime | Lapilli | `contract()` in `@ludiars/log-weaver` (observe / enforce, sample) | — |
+| C2 contracts + injection | Augur | `augur.contracts.json`, `augur contracts lint`, inject rule `contract-wrap`, Anatomia `--diff-base` matching | C1 types |
+| C3 aggregation | Augur | `augur contracts report` (`--acceptance`), `tests report` contracts section, flag summary | C2 |
+| C4 delegation | Concordia | contract-style acceptance criteria in templates, completion-evidence cross-check | C3 |
+| C5 display | Revisor | accept and show `summary.contracts` on local PRs | C3 |
+
 ## Non-Goals
 
 These stay out of scope for all phases above:
