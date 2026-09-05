@@ -21,6 +21,7 @@ const BOOLEAN = new Set([
   '--no-git', '--json', '--dry-run', '--strict', '--help',
   '--business-only', '--program-only', '--runtime', '--always', '--cached', '--no-promote',
   '--for-revisor', '--markdown', '--accept', '--reject', '--apply', '--analyze', '--no-impact',
+  '--include-existing',
 ]);
 
 export function parseArgv(argv: readonly string[]): ParsedArgs {

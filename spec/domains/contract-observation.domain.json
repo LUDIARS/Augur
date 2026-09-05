@@ -1,0 +1,22 @@
+{
+  "name": "contract-observation",
+  "description": "契約プログラミングによる受け入れ条件の機械可読表現。 augur.contracts.json のスキーマ、 述語モジュールの形の検査、 file:symbol の解決を担い、 注入と集計へ渡すデータを作る。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/contracts/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/cli/contracts\\.ts$"
+    },
+    {
+      "pathPattern": "(^|/)test/contracts/(?:.*/)?[^/]+$"
+    }
+  ],
+  "specRefs": [
+    "spec/plan/2026-09-05-live-contract-testing.md",
+    "spec/tasks/2026-09-05-contract-wrap-inject-rule.md",
+    "spec/interface/inject-cli.md"
+  ]
+}

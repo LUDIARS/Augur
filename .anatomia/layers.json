@@ -28,6 +28,7 @@
     { "glob": "src/catalog/**", "layer": "domain-logic" },
     { "glob": "src/schema/**", "layer": "domain-logic" },
     { "glob": "src/inject/**", "layer": "domain-logic" },
+    { "glob": "src/contracts/**", "layer": "domain-logic" },
     { "glob": "src/bus/**", "layer": "infrastructure" },
     { "glob": "src/config/**", "layer": "infrastructure" },
     { "glob": "src/server.ts", "layer": "infrastructure" },

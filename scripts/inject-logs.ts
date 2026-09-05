@@ -2,12 +2,14 @@
 //
 //   node --experimental-strip-types scripts/inject-logs.ts <command> \
 //     (--project <dir> | --fleet <file.json>) [--json] [--dry-run] [--strict] [--rule <name>]...
+//     [--diff-base <ref> | --analysis <file>] [--include-existing]
 //
 // Commands: scan | apply | check | remove. Markers in the target source are
 // the only state; see spec/feature/log-injection.md.
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { loadContractTargets } from '../src/inject/contract-project.ts';
 import { fleetSchema } from '../src/inject/manifest.ts';
 import { runOnProject, type ProjectRunResult } from '../src/inject/project.ts';
 import { INJECT_RULES, type InjectRule } from '../src/inject/types.ts';
@@ -18,7 +20,8 @@ function usage(message?: string): never {
   if (message !== undefined) console.error(`error: ${message}\n`);
   console.error(
     'usage: inject-logs.ts <scan|apply|check|remove> (--project <dir> | --fleet <file.json>)\n' +
-      '                      [--json] [--dry-run] [--strict] [--rule <name>]...',
+      '                      [--json] [--dry-run] [--strict] [--rule <name>]...\n' +
+      '                      [--diff-base <ref> | --analysis <file>] [--include-existing]',
   );
   process.exit(2);
 }
@@ -34,6 +37,9 @@ let fleet: string | undefined;
 let json = false;
 let dryRun = false;
 let strict = false;
+let diffBase: string | undefined;
+let analysisFile: string | undefined;
+let includeExisting = false;
 const rules: InjectRule[] = [];
 
 for (let i = 1; i < args.length; i += 1) {
@@ -43,6 +49,15 @@ for (let i = 1; i < args.length; i += 1) {
   else if (arg === '--json') json = true;
   else if (arg === '--dry-run') dryRun = true;
   else if (arg === '--strict') strict = true;
+  else if (arg === '--diff-base') {
+    const value = args[++i];
+    if (value === undefined || value.startsWith('--')) usage('--diff-base requires a ref');
+    diffBase = value;
+  } else if (arg === '--analysis') {
+    const value = args[++i];
+    if (value === undefined || value.startsWith('--')) usage('--analysis requires a file');
+    analysisFile = value;
+  } else if (arg === '--include-existing') includeExisting = true;
   else if (arg === '--rule') {
     const rule = args[++i];
     if (rule === undefined || !(INJECT_RULES as readonly string[]).includes(rule)) {
@@ -54,6 +69,9 @@ for (let i = 1; i < args.length; i += 1) {
 
 if ((project === undefined) === (fleet === undefined)) {
   usage('exactly one of --project / --fleet is required');
+}
+if (diffBase !== undefined && analysisFile !== undefined) {
+  usage('--diff-base and --analysis cannot be combined');
 }
 
 const projectDirs: string[] = [];
@@ -70,10 +88,19 @@ let failed = false;
 
 for (const dir of projectDirs) {
   try {
+    // Contract targets are resolved before the pure run: reading the contract
+    // file, its predicate modules and (for --diff-base) Anatomia is IO, and
+    // src/inject/ only ever receives the resulting data.
+    const contractTargets = await loadContractTargets(dir, {
+      diffBase,
+      analysisFile,
+      includeExisting,
+    });
     results.push(
       runOnProject(dir, command, {
         write: command === 'apply' || command === 'remove' ? !dryRun : false,
         rules: rules.length > 0 ? rules : undefined,
+        contractTargets,
       }),
     );
   } catch (error) {
@@ -97,13 +124,21 @@ if (json) {
       console.log(`${verb} ${result.filesChanged.length} file(s)${dryRun ? ' (dry-run, not written)' : ''}`);
     }
     console.log(
-      `summary: applied=${result.summary.applied} pending=${result.summary.pending} orphaned=${result.summary.orphaned}`,
+      'summary: '
+        + `applied=${result.summary.applied} pending=${result.summary.pending} `
+        + `orphaned=${result.summary.orphaned} unresolved=${result.summary.unresolved} `
+        + `stale-module=${result.summary.staleModule}`,
     );
   }
 }
 
 if (failed) process.exit(1);
 if (command === 'check' && strict) {
-  const drift = results.some((r) => r.summary.pending > 0 || r.summary.orphaned > 0);
+  const drift = results.some(
+    (r) => r.summary.pending > 0
+      || r.summary.orphaned > 0
+      || r.summary.unresolved > 0
+      || r.summary.staleModule > 0,
+  );
   if (drift) process.exit(1);
 }

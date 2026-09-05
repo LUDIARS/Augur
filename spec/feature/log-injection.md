@@ -28,6 +28,17 @@ The scanner parses each included file with the TypeScript compiler API (TS and E
 | `spawn-watch` | `spawn`/`execFile` result assigned to a variable that is never given an `.on('error', …)` in the same scope | `watchChild(<var>, { where })` statement after the assignment | §2 spawn error listeners |
 | `interval-guard` | `setInterval(<async function literal>, …)` whose body is not fully wrapped in try/catch | wrap the callback: `guardAsync(<fn>, { where })` | §1 timer body guards |
 | `listener-guard` | `.on(<string>, <async function literal>)` / `.once(…)` whose body is not fully wrapped in try/catch | wrap the callback: `guardAsync(<fn>, { where })` | §1 async listener guards |
+| `contract-wrap` | a `file:symbol` **named by `augur.contracts.json`** — not discovered by the scanner | wrap the function: `contract(<fn>, { ...<predicate>, contractId, mode, sample, where, rule, id })` | acceptance criteria as contracts ([live contract testing](../plan/2026-09-05-live-contract-testing.md) §2.3) |
+
+`contract-wrap` differs from the other four in where its anchors come from: the contract file names them, and the scanner only resolves the name to a position. Three declaration forms are supported, all by insertion alone:
+
+| Declaration | Injected |
+| --- | --- |
+| `export const f = <initializer>` | the initializer is wrapped in `contract(…)` |
+| `export function f(…) {}` | the declaration is left as it is; a `f = contract(f, …);` line is added after it, preceded by `// @ts-expect-error augur-inject` (TS2630 forbids assigning to a function declaration) |
+| `class C { m(…) {} }` | `C.prototype.m = contract(C.prototype.m, …);` after the class — `C.m = …` for a `static` method |
+
+Private methods (`#m`) and symbols the file does not declare at the top level are `unresolved`; they are reported, never guessed at. The `contract` import comes from `augur.contracts.json`'s `importFrom`; the other injection rules continue to use `augur.inject.json`'s `importFrom`, so projects may intentionally route contract observation through a distinct runtime module. Each contract's predicate module is imported by default on its own marker-tagged line.
 
 Insertion never alters control flow beyond what the checklist itself prescribes: `weaverLog` only records; `guardAsync` catches, records, and swallows — which is exactly the stabilization the checklist asks for (a throwing interval/listener body must not kill the process or the timer). `watchChild` attaches an `error` listener, turning a fatal missing-listener crash into a logged event.
 
@@ -50,8 +61,10 @@ Every injected fragment carries a marker comment:
 | `applied` | scan candidate has a matching marker |
 | `pending` | scan found a candidate with no marker (new code appeared) |
 | `orphaned` | marker exists but no scan candidate matches it (anchor was refactored away — the fragment may now be dead or misplaced) |
+| `unresolved` | `contract-wrap` only: `augur.contracts.json` names a `file:symbol` the source no longer declares |
+| `stale-module` | `contract-wrap` only: the contract's predicate module is missing, or does not `export default` an object literal |
 
-`check --strict` exits non-zero when anything is `pending` or `orphaned`, so a target repo can put it in CI.
+`check --strict` exits non-zero when anything is `pending`, `orphaned`, `unresolved` or `stale-module`, so a target repo can put it in CI.
 
 ## Manifest
 
@@ -76,6 +89,8 @@ Each managed project declares intent in `augur.inject.json` at its root:
 - `rules` toggles detection per rule; omitted rules default to on.
 - `importFrom` lets a project alias the runtime (e.g. a local shim that binds to an already-installed Vg writer) without changing injected call shapes.
 - `runtime.autoImport: false` opts out of `entry-runtime` for projects that already install their own safety net (Concordia after its stability fixes does).
+
+`contract-wrap` reads a second file, `augur.contracts.json`, placed beside the manifest. It names the contracts, their predicate modules, and the acceptance criterion each one stands for; its schema and the `augur contracts lint` check live in [live contract testing](../plan/2026-09-05-live-contract-testing.md) §3 / §6. A project without that file simply has no `contract-wrap` points.
 
 Fleet management is a JSON list of project directories (see [Inject CLI](../interface/inject-cli.md)); every command accepts `--fleet` and iterates, so one Augur checkout can scan/apply/check all sibling LUDIARS checkouts in one run.
 

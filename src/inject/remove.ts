@@ -8,43 +8,103 @@
 // wrapped callback, so positions are recomputed after every removal).
 
 import ts from 'typescript';
+import { CONTRACT_IMPORT_RULE, CONTRACT_RULE } from './contract-scan.ts';
+import { removeContractWrap } from './contract-remove.ts';
 import { findMarkers } from './markers.ts';
 import { parseSource } from './scan.ts';
-import type { MarkerHit } from './types.ts';
+import { RUNTIME_SYMBOL_BY_RULE } from './runtime-symbols.ts';
+import { unwrapCall } from './unwrap.ts';
+import type { InjectRule, MarkerHit } from './types.ts';
 
 export type RemoveResult = { text: string; removed: number; changed: boolean };
 
-export function computeRemove(relPath: string, text: string): RemoveResult {
+export function computeRemove(relPath: string, text: string, onlyRules?: readonly InjectRule[]): RemoveResult {
   let current = text;
   let removed = 0;
+  const selected = onlyRules === undefined ? undefined : new Set<string>(onlyRules);
   for (;;) {
     const markers = findMarkers(current);
-    if (markers.length === 0) break;
-    const target = markers[markers.length - 1] as MarkerHit;
-    const next = removeOne(relPath, current, target);
-    if (next === null) {
-      // Unrecognized fragment shape around the marker; drop just the marker
-      // comment so the loop always terminates.
-      current = current.slice(0, target.start) + current.slice(target.end);
-    } else {
-      current = next;
+    let changedThisPass = false;
+    for (const target of [...markers].reverse()) {
+      if (!shouldRemove(target.rule, selected)) continue;
+      const next = target.rule === 'import'
+        ? selected === undefined ? removeLine(current, target) : reconcileRuntimeImport(relPath, current, target)
+        : removeOne(relPath, current, target);
+      if (next === current) continue;
+      if (next === null) {
+        // Unrecognized fragment shape around the marker; drop just the marker
+        // comment so the loop always terminates.
+        current = current.slice(0, target.start) + current.slice(target.end);
+      } else {
+        current = next;
+      }
+      removed += 1;
+      changedThisPass = true;
+      break;
     }
-    removed += 1;
+    if (!changedThisPass) break;
   }
   return { text: current, removed, changed: removed > 0 };
 }
 
+function shouldRemove(rule: string, selected: ReadonlySet<string> | undefined): boolean {
+  if (selected === undefined) return true;
+  if (rule === CONTRACT_IMPORT_RULE) return selected.has(CONTRACT_RULE);
+  if (rule === 'import') {
+    return [...selected].some((selectedRule) => RUNTIME_SYMBOL_BY_RULE[selectedRule as InjectRule] !== undefined);
+  }
+  return selected.has(rule);
+}
+
 function removeOne(relPath: string, text: string, hit: MarkerHit): string | null {
-  if (hit.rule === 'import' || hit.rule === 'entry-runtime') {
+  if (hit.rule === 'import' || hit.rule === 'entry-runtime' || hit.rule === CONTRACT_IMPORT_RULE) {
     return removeLine(text, hit);
   }
   if (hit.rule === 'silent-catch' || hit.rule === 'spawn-watch') {
     return removeStatement(relPath, text, hit);
   }
   if (hit.rule === 'interval-guard' || hit.rule === 'listener-guard') {
-    return unwrapGuard(relPath, text, hit);
+    return unwrapCall(relPath, text, hit, 'guardAsync');
+  }
+  if (hit.rule === CONTRACT_RULE) {
+    return removeContractWrap(relPath, text, hit);
   }
   return null;
+}
+
+/** Keep the managed runtime import in sync with fragments that remain after a selective removal. */
+function reconcileRuntimeImport(relPath: string, text: string, hit: MarkerHit): string | null {
+  const sf = parseSource(relPath, text);
+  let declaration: ts.ImportDeclaration | null = null;
+  for (const statement of sf.statements) {
+    if (
+      ts.isImportDeclaration(statement)
+      && statement.end <= hit.start
+      && text.slice(statement.end, hit.start).trim() === ''
+      && (declaration === null || statement.end > declaration.end)
+    ) {
+      declaration = statement;
+    }
+  }
+  if (declaration === null) return null;
+  const bindings = declaration.importClause?.namedBindings;
+  if (bindings === undefined || !ts.isNamedImports(bindings)) return null;
+
+  const required = new Set<string>();
+  for (const markerHit of findMarkers(text)) {
+    if (markerHit.rule === 'import' || markerHit.rule === CONTRACT_IMPORT_RULE) continue;
+    const symbol = RUNTIME_SYMBOL_BY_RULE[markerHit.rule as InjectRule];
+    if (symbol !== undefined) required.add(symbol);
+  }
+  if (required.size === 0) return removeLine(text, hit);
+  const knownSymbols = new Set(Object.values(RUNTIME_SYMBOL_BY_RULE).filter((value) => value !== undefined));
+  const kept = bindings.elements.filter(
+    (element) => !knownSymbols.has(element.name.text) || required.has(element.name.text),
+  );
+  if (kept.length === bindings.elements.length) return text;
+  if (kept.length === 0) return removeLine(text, hit);
+  const replacement = `{ ${kept.map((element) => text.slice(element.getStart(sf), element.end)).join(', ')} }`;
+  return text.slice(0, bindings.getStart(sf)) + replacement + text.slice(bindings.end);
 }
 
 /** Delete the whole line carrying the marker (imports live alone on a line). */
@@ -84,30 +144,4 @@ function removeStatement(relPath: string, text: string, hit: MarkerHit): string 
     if (start > 0 && text[start - 1] === '\r') start -= 1;
   }
   return text.slice(0, start) + text.slice(hit.end);
-}
-
-/** Replace the marker-tagged guardAsync(<cb>, {...}) wrap with the original <cb>. */
-function unwrapGuard(relPath: string, text: string, hit: MarkerHit): string | null {
-  const sf = parseSource(relPath, text);
-  let call: ts.CallExpression | null = null;
-  const visit = (node: ts.Node): void => {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'guardAsync' &&
-      node.end <= hit.start &&
-      text.slice(node.end, hit.start).trim() === '' &&
-      (call === null || node.end > call.end)
-    ) {
-      call = node;
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sf);
-  if (call === null) return null;
-  const callNode = call as ts.CallExpression;
-  const cb = callNode.arguments[0];
-  if (cb === undefined) return null;
-  const cbText = text.slice(cb.getStart(sf), cb.end);
-  return text.slice(0, callNode.getStart(sf)) + cbText + text.slice(hit.end);
 }

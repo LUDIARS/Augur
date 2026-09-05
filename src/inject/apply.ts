@@ -4,12 +4,14 @@
 // byte-identical outside the inserted fragments.
 
 import ts from 'typescript';
+import { computePredicateImportEdit, contractEdits } from './contract-apply.ts';
+import { importAnchor } from './import-position.ts';
 import type { InjectManifest } from './manifest.ts';
 import { marker, pointId } from './markers.ts';
 import { parseSource, scanSource } from './scan.ts';
-import type { Candidate, InjectRule } from './types.ts';
-
-type TextEdit = { start: number; end: number; text: string };
+import { RUNTIME_SYMBOL_BY_RULE } from './runtime-symbols.ts';
+import { sourceString } from './source-literal.ts';
+import type { Candidate, InjectContext, InjectRule, TextEdit } from './types.ts';
 
 export type ApplyResult = {
   text: string;
@@ -18,34 +20,34 @@ export type ApplyResult = {
   changed: boolean;
 };
 
-const SYMBOL_BY_RULE: Partial<Record<InjectRule, string>> = {
-  'silent-catch': 'weaverLog',
-  'spawn-watch': 'watchChild',
-  'interval-guard': 'guardAsync',
-  'listener-guard': 'guardAsync',
-};
-
 export function computeApply(
   relPath: string,
   text: string,
   manifest: InjectManifest,
   onlyRules?: InjectRule[],
+  context?: InjectContext,
 ): ApplyResult {
-  const candidates = scanSource(relPath, text, manifest);
+  const candidates = scanSource(relPath, text, manifest, context);
+  // `problem` candidates (contract-wrap's unresolved / stale-module) are
+  // reportable but not injectable — they never become work for apply.
   const pending = candidates.filter(
-    (c) => !c.applied && (onlyRules === undefined || onlyRules.includes(c.rule)),
+    (c) => !c.applied && c.problem === undefined && (onlyRules === undefined || onlyRules.includes(c.rule)),
   );
   if (pending.length === 0) return { text, injected: [], changed: false };
 
   const edits: TextEdit[] = [];
-  const where = (c: Candidate): string => `{ where: '${c.file}:${c.line}', rule: '${c.rule}', id: '${c.id}' }`;
+  const where = (c: Candidate): string => (
+    `{ where: ${sourceString(`${c.file}:${c.line}`)}, rule: ${sourceString(c.rule)}, id: ${sourceString(c.id)} }`
+  );
 
   for (const c of pending) {
-    if (c.rule === 'entry-runtime' && c.insertPos !== undefined) {
+    if (c.rule === 'contract-wrap') {
+      edits.push(...contractEdits(c));
+    } else if (c.rule === 'entry-runtime' && c.insertPos !== undefined) {
       edits.push({
         start: c.insertPos,
         end: c.insertPos,
-        text: `import '${manifest.importFrom}/auto'; ${marker(c.rule, c.id)}\n`,
+        text: `import ${sourceString(`${manifest.importFrom}/auto`)}; ${marker(c.rule, c.id)}\n`,
       });
     } else if (c.rule === 'silent-catch' && c.insertPos !== undefined) {
       edits.push({
@@ -65,8 +67,11 @@ export function computeApply(
     }
   }
 
-  const importEdit = computeImportEdit(relPath, text, manifest, pending);
-  if (importEdit !== null) edits.push(importEdit);
+  // Pushed before the runtime import: splice applies equal-position edits in
+  // array order, so the last one pushed ends up first in the text.
+  const predicateEdit = computePredicateImportEdit(relPath, text, pending);
+  if (predicateEdit !== null) edits.push(predicateEdit);
+  edits.push(...computeImportEdits(relPath, text, manifest, pending));
 
   return { text: splice(text, edits), injected: pending, changed: true };
 }
@@ -76,29 +81,45 @@ export function computeApply(
  * file's fragments use. Symbols already imported from `importFrom` by the
  * host's own code are respected, not duplicated.
  */
-function computeImportEdit(
+function computeImportEdits(
   relPath: string,
   text: string,
   manifest: InjectManifest,
   pending: Candidate[],
-): TextEdit | null {
-  const needed = new Set<string>();
+): TextEdit[] {
+  const bySource = new Map<string, Set<string>>();
   for (const c of pending) {
-    const symbol = SYMBOL_BY_RULE[c.rule];
-    if (symbol !== undefined) needed.add(symbol);
+    const symbol = RUNTIME_SYMBOL_BY_RULE[c.rule];
+    if (symbol === undefined) continue;
+    const source = c.rule === 'contract-wrap' ? c.contract?.importFrom ?? manifest.importFrom : manifest.importFrom;
+    const needed = bySource.get(source) ?? new Set<string>();
+    needed.add(symbol);
+    bySource.set(source, needed);
   }
-  if (needed.size === 0) return null;
+  const edits: TextEdit[] = [];
+  for (const [source, needed] of bySource) {
+    const edit = computeImportEdit(relPath, text, manifest.importFrom, source, needed);
+    if (edit !== null) edits.push(edit);
+  }
+  return edits;
+}
 
+function computeImportEdit(
+  relPath: string,
+  text: string,
+  defaultImportFrom: string,
+  importFrom: string,
+  needed: ReadonlySet<string>,
+): TextEdit | null {
   const sf = parseSource(relPath, text);
-  let lastImportEnd: number | null = null;
+  const anchor = importAnchor(sf, text);
   let managedImport: ts.ImportDeclaration | null = null;
   const existingSymbols = new Set<string>();
 
   for (const statement of sf.statements) {
     if (!ts.isImportDeclaration(statement)) continue;
-    lastImportEnd = statement.end;
     if (!ts.isStringLiteralLike(statement.moduleSpecifier)) continue;
-    if (statement.moduleSpecifier.text !== manifest.importFrom) continue;
+    if (statement.moduleSpecifier.text !== importFrom) continue;
     const bindings = statement.importClause?.namedBindings;
     if (bindings !== undefined && ts.isNamedImports(bindings)) {
       for (const element of bindings.elements) existingSymbols.add(element.name.text);
@@ -111,7 +132,7 @@ function computeImportEdit(
   const missing = [...needed].filter((s) => !existingSymbols.has(s));
   if (missing.length === 0) return null;
 
-  const importId = pointId('import', relPath, '', 0);
+  const importId = pointId('import', relPath, importFrom === defaultImportFrom ? '' : `contract:${importFrom}`, 0);
   if (managedImport !== null) {
     // Rewrite the managed import line with the union of symbols.
     const union = [...new Set([...existingSymbols, ...missing])].sort();
@@ -119,16 +140,15 @@ function computeImportEdit(
     return {
       start: managedImport.getStart(sf),
       end: markerEnd,
-      text: `import { ${union.join(', ')} } from '${manifest.importFrom}'; ${marker('import', importId)}`,
+      text: `import { ${union.join(', ')} } from ${sourceString(importFrom)}; ${marker('import', importId)}`,
     };
   }
 
-  const lineText = `import { ${missing.sort().join(', ')} } from '${manifest.importFrom}'; ${marker('import', importId)}`;
-  if (lastImportEnd !== null) {
-    return { start: lastImportEnd, end: lastImportEnd, text: `\n${lineText}` };
+  const lineText = `import { ${missing.sort().join(', ')} } from ${sourceString(importFrom)}; ${marker('import', importId)}`;
+  if (anchor.lastImportEnd !== null) {
+    return { start: anchor.lastImportEnd, end: anchor.lastImportEnd, text: `\n${lineText}` };
   }
-  const shebangEnd = text.startsWith('#!') ? text.indexOf('\n') + 1 : 0;
-  return { start: shebangEnd, end: shebangEnd, text: `${lineText}\n` };
+  return { start: anchor.shebangEnd, end: anchor.shebangEnd, text: `${lineText}\n` };
 }
 
 export function splice(text: string, edits: TextEdit[]): string {

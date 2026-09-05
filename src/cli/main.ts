@@ -9,6 +9,7 @@ import {
   type ParsedArgs,
 } from './args.ts';
 import { formatPlanText } from './format.ts';
+import { runContractsCommand } from './contracts.ts';
 import { messageOf, type GatherIo } from './gather.ts';
 import { buildRequest } from './plan.ts';
 import { reviewPlan } from './reviewPlan.ts';
@@ -28,6 +29,7 @@ const USAGE = `Usage:
   augur plan [options] [description]     Plan tests and a fix policy for local changes
   augur review-plan --json               Decide which review checks one change needs (stdin JSON)
   augur inject <scan|apply|check|remove> Log injection (see spec/interface/inject-cli.md)
+  augur contracts lint                   Check augur.contracts.json against the sources
   augur tests <verb>                     Manage registered tests
   augur serve                            Start the optional loopback HTTP API
   augur mcp                              Start the stdio MCP server
@@ -77,6 +79,7 @@ export async function main(argv: readonly string[], io: CliIo): Promise<number> 
     // Awaited rather than returned: a bare `return promise` settles outside this
     // try, so a rejection would escape the exit-code mapping below.
     if (args.command === 'inject') return await runInject(argv.slice(1), io);
+    if (args.command === 'contracts') return await runContractsCommand(argv.slice(1), io);
     if (args.command === 'tests') return await runTestsCommand(argv.slice(1), io);
     if (args.command === 'serve') {
       const { startServer } = await import('../server.ts');

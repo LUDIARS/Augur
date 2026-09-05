@@ -296,6 +296,10 @@ export function contract<T, A extends unknown[], R>(
 `contract(original, { ...predicate, contractId: 'C-1', mode: 'observe', sample: 1,
 where: 'src/…:line', rule: 'contract-wrap', id: '<marker-id>' })` とし、manifest が持つ実行設定と
 既存 `Where` の位置情報を述語 object に合成する。
+`file` / `module` / `contractsDir` はプロジェクト内に収まる相対 path に限定し、絶対 path・
+traversal・制御文字・プロジェクト外へ解決する symlink は注入前に拒否する。
+`contract` の import 元は `augur.contracts.json#importFrom`、既存 rule の import 元は
+`augur.inject.json#importFrom` とし、異なる場合は別々の marker 付き import を生成する。
 
 ### 5.2 `check` の追加状態
 
@@ -449,7 +453,8 @@ C1 と C2 は並行可。C4 / C5 は小さいので 1 委託にまとめても�
 
 - C2-1 `computeApply(path, text, manifest, ['contract-wrap'])`: 契約に指名された 3 形の関数を
   すべて wrap し、それ以外のバイト列を変えない
-- C2-2 `computeRemove(path, appliedText)`: apply 前のテキストと byte-identical に戻す
+- C2-2 `computeRemove(path, appliedText, rules?)`: 全 rule の remove は apply 前のテキストと
+  byte-identical に戻し、rule 指定時は指定 fragment と不要になった import だけを戻す
 - C2-3 `checkProject(dir)`: 契約の `file:symbol` がソースに無ければ `unresolved` を返し、
   `--strict` で非 0
 - C3-1 `aggregateContracts(events, contracts)`: 同じ入力から byte-identical な集計、

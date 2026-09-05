@@ -3,23 +3,34 @@
 // parses with the TypeScript compiler API, so TS and ESM JS both work.
 
 import ts from 'typescript';
+import { collectContractWrap } from './contract-scan.ts';
 import type { InjectManifest } from './manifest.ts';
 import { ruleEnabled } from './manifest.ts';
 import { findMarkers } from './markers.ts';
 import { pointId } from './markers.ts';
-import type { Candidate, InjectRule, MarkerHit } from './types.ts';
+import type { Candidate, InjectContext, InjectRule, MarkerHit } from './types.ts';
 
 export function parseSource(relPath: string, text: string): ts.SourceFile {
   const kind = relPath.endsWith('.ts') || relPath.endsWith('.mts') ? ts.ScriptKind.TS : ts.ScriptKind.JS;
   return ts.createSourceFile(relPath, text, ts.ScriptTarget.Latest, true, kind);
 }
 
-export function scanSource(relPath: string, text: string, manifest: InjectManifest): Candidate[] {
+export function scanSource(
+  relPath: string,
+  text: string,
+  manifest: InjectManifest,
+  context?: InjectContext,
+): Candidate[] {
   const sf = parseSource(relPath, text);
   const markers = findMarkers(text);
   const collected: Omit<Candidate, 'id'>[] = [];
 
   collectEntryRuntime(relPath, text, manifest, markers, collected);
+  // contract-wrap is named by the contract file, not discovered in the AST, so
+  // it is collected outside the walk (spec/plan/2026-09-05-live-contract-testing.md §2.3).
+  if (context?.contractTargets !== undefined && ruleEnabled(manifest, 'contract-wrap')) {
+    collectContractWrap(relPath, text, context.contractTargets, markers, collected);
+  }
 
   const visit = (node: ts.Node): void => {
     if (ts.isCatchClause(node) && ruleEnabled(manifest, 'silent-catch')) {
@@ -45,7 +56,7 @@ export function scanSource(relPath: string, text: string, manifest: InjectManife
     const markerId = c.markerIndex === undefined
       ? undefined
       : markers.find((m) => m.start === c.markerIndex)?.id;
-    return { ...c, id: markerId ?? pointId(c.rule, c.file, c.anchor, ordinal) };
+    return { ...c, id: c.presetId ?? markerId ?? pointId(c.rule, c.file, c.anchor, ordinal) };
   });
 }
 

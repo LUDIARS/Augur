@@ -18,7 +18,7 @@ codes below are unchanged by that move.
 | --- | --- |
 | `scan` | list injection point candidates (rule, file, anchor, current state) |
 | `apply` | insert fragments for all `pending` points; idempotent — already-marked anchors are skipped |
-| `check` | report `applied` / `pending` / `orphaned` per point; `--strict` exits 1 when anything is not `applied` |
+| `check` | report `applied` / `pending` / `orphaned` / `unresolved` / `stale-module` per point; `--strict` exits 1 when anything is not `applied` |
 | `remove` | strip all marker-tagged fragments (wraps are unwrapped, inserted lines and imports deleted) |
 
 ## Options
@@ -29,10 +29,15 @@ codes below are unchanged by that move.
 | `--fleet <file.json>` | all | iterate a fleet file: `{ "projects": ["../Concordia", "../Lictor"] }`; each entry is resolved relative to the fleet file |
 | `--json` | all | machine-readable output (one JSON document on stdout) |
 | `--dry-run` | `apply`, `remove` | compute and print edits without writing |
-| `--strict` | `check` | non-zero exit on `pending` or `orphaned` |
+| `--strict` | `check` | non-zero exit on `pending`, `orphaned`, `unresolved`, or `stale-module` |
 | `--rule <name>` | all | restrict to one rule (repeatable) |
+| `--diff-base <ref>` | `contract-wrap` | run Anatomia `pr-review --base <ref>` and inject only the contracts whose `file:symbol` the change added |
+| `--analysis <file>` | `contract-wrap` | take that `PrDiffReview` JSON instead of running Anatomia (the gate already produced one) |
+| `--include-existing` | `contract-wrap` | inject every contract the file names, added or not |
 
-Exactly one of `--project` / `--fleet` is required.
+Exactly one of `--project` / `--fleet` is required; `--diff-base` and `--analysis` cannot be combined.
+
+With none of the three contract options, every contract the file names is a target — which is what a repository that has not adopted Anatomia gets. The Anatomia CLI is located the same way `augur tests plan` locates it (`AUGUR_ANATOMIA_DIR`, defaulting to a sibling `../Anatomia` checkout) and is spawned without a shell.
 
 ## Output
 
@@ -44,7 +49,19 @@ applied  spawn-watch    src/control/spawn.ts:88  child ← spawn(...)
 orphaned interval-guard a1b2c3d4 (marker present, anchor gone)
 ```
 
-`--json` emits `{ project, points: InjectionPoint[], summary: { applied, pending, orphaned } }` per project, wrapped in an array under `--fleet`.
+`--json` emits `{ project, points: InjectionPoint[], summary: { applied, pending, orphaned, unresolved, staleModule } }` per project, wrapped in an array under `--fleet`.
+
+`unresolved` and `stale-module` are `contract-wrap`'s: the contract file names a function the source no longer declares, or a predicate module that is missing or malformed (see [Log Injection Framework](../feature/log-injection.md), "Markers").
+
+Contract manifest paths must remain inside the project; absolute paths, traversal, control characters, and symlinks that resolve outside the project are rejected before any source is changed. Generated string literals are escaped. `contract-wrap` imports `contract` from `augur.contracts.json#importFrom`; other rules use `augur.inject.json#importFrom`.
+
+## `augur contracts lint`
+
+```text
+augur contracts lint [--project <dir>] [--json]
+```
+
+Checks `augur.contracts.json` on its own, without touching any source: duplicate ids (rejected by the schema), every `file:symbol` resolving to a top-level declaration, and every predicate module existing with an object-literal default export. Exit 0 when clean, 1 when the manifest is unreadable or any finding is reported. `--json` emits `{ project, contracts, findings: [{ contractId, code, file, symbol, message }] }`.
 
 ## Exit Codes
 
