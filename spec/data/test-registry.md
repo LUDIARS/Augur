@@ -52,6 +52,7 @@ interface TestRecord {
     program: string[];           // プログラムドメインキー `<layer>:<moduleId>` (例 "shared:test/golden")。**1 件以上必須**
   };
   anchors: string[];             // このテストが守る Anatomia AnchorId (変更検知・バンドル選択に使う)
+  uxRefs?: string[];             // Praeforma scenario / use case に対応する spec/UX 値 ID
   origin: {
     type: "pr" | "incident" | "experience" | "manual";
     ref: string;                 // PR 番号 / 問題ログ path / experience goal id / 空
@@ -212,6 +213,8 @@ interface RunRecord {
   status: "passed" | "failed" | "error";   // error = ランナー自体が動かなかった
   verdict?: Verdict;
   flag?: FlagResult;
+  evidence?: Array<{ testId: string; targetKind: "scenario" | "use_case"; targetId: string; evidenceId: string; at: string }>;
+  unresolvedUxRefs?: string[];
 }
 
 interface Verdict {
@@ -231,6 +234,9 @@ interface FlagResult {
 ```
 
 `status` は `results` から導出する。上から順に最初に当たった行を採る (全入力を尽くす)。
+
+`evidence` は Praeforma が返した登録済み証拠だけを持つ。`unresolvedUxRefs` は対応表に無い
+UX 参照であり、未解決を成功へ読み替えないため report に残す。
 
 | 条件 | `status` |
 |---|---|

@@ -40,6 +40,7 @@ export function registerTarget(input: {
   authoredBy: 'session' | 'claude-cli';
   now: string;
   note?: string;
+  uxRefs?: string[];
 }): TestRecord {
   const record: TestRecord = {
     id: testId(input.plan.repository, input.target.file, input.target.brief.title),
@@ -50,6 +51,7 @@ export function registerTarget(input: {
     kind: input.target.kind,
     domains: input.target.domains,
     anchors: input.target.anchors,
+    ...(input.uxRefs === undefined || input.uxRefs.length === 0 ? {} : { uxRefs: input.uxRefs }),
     origin: {
       type: input.plan.source.type,
       ref: input.plan.source.ref,

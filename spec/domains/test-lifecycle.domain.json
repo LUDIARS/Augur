@@ -33,6 +33,8 @@
     "spec/data/test-registry.md",
     "spec/interface/tests-cli.md",
     "spec/interface/tests-api.md",
-    "spec/interface/revisor-verification.md"
+    "spec/interface/revisor-verification.md",
+    "spec/interface/praeforma-evidence.md",
+    "spec/tasks/2026-09-16-praeforma-evidence.md"
   ]
 }

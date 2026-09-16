@@ -15,6 +15,7 @@ import { runsCommand } from './runs.ts';
 import { showCommand } from './show.ts';
 import { sweepCommand } from './sweep.ts';
 import { verdictCommand } from './verdict.ts';
+import { evidenceCommand } from './evidence.ts';
 
 const COMMANDS = {
   list: listCommand,
@@ -27,6 +28,7 @@ const COMMANDS = {
   report: reportCommand,
   verdict: verdictCommand,
   flag: flagCommand,
+  evidence: evidenceCommand,
   runs: runsCommand,
   sweep: sweepCommand,
   revive: reviveCommand,

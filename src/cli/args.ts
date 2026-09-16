@@ -13,7 +13,7 @@ export interface ParsedArgs {
 // Flags that may appear more than once; every other repeat is an error, because
 // a silently discarded second `--base` is worse than a message. `--rule` belongs
 // to `augur inject`, whose argv passes through this parser unchanged.
-const REPEATABLE = new Set(['--quality', '--rule', '--program', '--business', '--anchor']);
+const REPEATABLE = new Set(['--quality', '--rule', '--program', '--business', '--anchor', '--ux']);
 
 // Flags that take no value. `--dry-run` and `--strict` are `augur inject`'s
 // (spec/interface/inject-cli.md); they are listed so its argv survives parsing.

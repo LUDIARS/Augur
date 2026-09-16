@@ -2,10 +2,11 @@ import type { TestOperations } from '../../operations/tests.ts';
 import { flagValue, flagValues, hasFlag, rejectUnknownFlags, UsageError } from '../args.ts';
 import { emitJsonOrText, repoPath, type TestCliContext } from './common.ts';
 
+/** @implements SPEC-PRAEFORMA-EVIDENCE */
 export async function registerCommand(context: TestCliContext, operations: TestOperations): Promise<number> {
   rejectUnknownFlags(context.args, [
     '--repo', '--from-plan', '--file', '--name', '--runner', '--selector', '--kind',
-    '--program', '--business', '--anchor', '--runtime', '--always', '--json',
+    '--program', '--business', '--anchor', '--ux', '--runtime', '--always', '--json',
   ]);
   const fromPlan = flagValue(context.args, '--from-plan');
   if (fromPlan !== undefined) {
@@ -27,6 +28,7 @@ export async function registerCommand(context: TestCliContext, operations: TestO
     program: [...flagValues(context.args, '--program')],
     business: [...flagValues(context.args, '--business')],
     anchors: [...flagValues(context.args, '--anchor')],
+    uxRefs: [...flagValues(context.args, '--ux')],
     runtime: hasFlag(context.args, '--runtime'),
     always: hasFlag(context.args, '--always'),
   });

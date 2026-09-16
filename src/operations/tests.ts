@@ -9,6 +9,7 @@ import { parseBundle } from '../tests/bundle.ts';
 import { contractTotals, contractsForRun } from '../tests/contracts.ts';
 import { assertFlagPreconditions, flagRun, type FlagClientOptions } from '../tests/flag.ts';
 import { createReport, type Report } from '../tests/report.ts';
+import { publishEvidence, type EvidenceDependencies } from '../tests/evidence.ts';
 import {
   lintRegistry,
   loadRegistry,
@@ -40,6 +41,7 @@ import {
   type TestPlan,
   type TestRecord,
   type Verdict,
+  type PraeformaEvidenceResult,
 } from '../tests/types.ts';
 
 export interface ServiceCatalog {
@@ -71,6 +73,7 @@ export interface TestOperations {
   report(runId: string): Promise<Report>;
   verdict(runId: string, verdict: Verdict): Promise<RunRecord>;
   flag(runId: string, target: { pullRequestId: string }): Promise<FlagResult>;
+  evidence(q: { runId: string; repoPath?: string; dryRun?: boolean }): Promise<PraeformaEvidenceResult>;
   listRuns(q: RunQuery): Promise<RunRecord[]>;
   sweep(q: { repoPath: string; now?: string; apply?: boolean }): Promise<SweepResult>;
   revive(q: { repoPath: string; testId: string }): Promise<TestRecord>;
@@ -90,6 +93,7 @@ export interface TestOperationsOptions {
   planStore?: PlanStore;
   planDependencies?: Partial<Omit<TestPlanDependencies, 'planStore' | 'runStore'>>;
   authorDependencies?: Pick<Partial<AuthorDependencies>, 'claude'>;
+  evidenceDependencies?: Partial<EvidenceDependencies>;
 }
 
 const registerSchema = z.object({
@@ -103,6 +107,7 @@ const registerSchema = z.object({
   program: z.array(z.string()).min(1),
   business: z.array(z.string()).default([]),
   anchors: z.array(z.string()).default([]),
+  uxRefs: z.array(z.string().min(1)).default([]),
   runtime: z.boolean().default(false),
   always: z.boolean().default(false),
 }).strict();
@@ -118,6 +123,7 @@ export class DefaultTestOperations implements TestOperations {
   private readonly planStore: PlanStore;
   private readonly planOverrides: Partial<Omit<TestPlanDependencies, 'planStore' | 'runStore'>>;
   private readonly authorOverrides: Pick<Partial<AuthorDependencies>, 'claude'>;
+  private readonly evidenceOverrides: Partial<EvidenceDependencies>;
 
   constructor(options: TestOperationsOptions = {}) {
     this.config = options.config ?? loadConfig();
@@ -128,6 +134,7 @@ export class DefaultTestOperations implements TestOperations {
     this.planStore = options.planStore ?? new FilePlanStore(this.config.dataDir, this.clock);
     this.planOverrides = options.planDependencies ?? {};
     this.authorOverrides = options.authorDependencies ?? {};
+    this.evidenceOverrides = options.evidenceDependencies ?? {};
   }
 
   resolveRepo(input: { repository?: string | undefined; repoPath?: string | undefined }): string {
@@ -210,6 +217,7 @@ export class DefaultTestOperations implements TestOperations {
       kind: input.kind,
       domains: { business: input.business, program: input.program },
       anchors: input.anchors,
+      ...(input.uxRefs.length === 0 ? {} : { uxRefs: input.uxRefs }),
       origin: { type: 'manual', ref: '', authoredBy: 'human' },
       runtime: input.runtime,
       always: input.always,
@@ -248,7 +256,7 @@ export class DefaultTestOperations implements TestOperations {
         unmatched.push({ key: target.key, file: target.file, title: target.brief.title, reason: 'no matching @augur header or title' });
         continue;
       }
-      registered.push(registerTarget({ repoPath, plan, target, authoredBy: 'session', now }));
+      registered.push(registerTarget({ repoPath, plan, target, authoredBy: 'session', now, uxRefs: uxRefsIn(source) }));
     }
     return { registered, unmatched };
   }
@@ -325,6 +333,18 @@ export class DefaultTestOperations implements TestOperations {
     const flag = await flagRun(run, target.pullRequestId, this.flagOptions, contractTotals(await contractsForRun(run)));
     await (await this.store()).put({ ...run, flag });
     return flag;
+  }
+
+  async evidence(q: { runId: string; repoPath?: string; dryRun?: boolean }): Promise<PraeformaEvidenceResult> {
+    const run = await this.requireRun(q.runId);
+    const repoPath = q.repoPath === undefined ? run.repoPath : resolve(q.repoPath);
+    if (repoPath !== run.repoPath) throw new InvalidOperationInputError('evidence repository must match the run repository');
+    const result = await publishEvidence(run, loadRegistry(repoPath), { repoPath, dryRun: q.dryRun === true }, {
+      now: this.clock,
+      ...this.evidenceOverrides,
+    });
+    if (!q.dryRun) await (await this.store()).put({ ...run, evidence: result.evidence, unresolvedUxRefs: result.unresolvedUxRefs });
+    return result;
   }
 
   async listRuns(q: RunQuery): Promise<RunRecord[]> {
@@ -441,4 +461,15 @@ function prunableFiles(records: readonly TestRecord[]): string[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function uxRefsIn(source: string): string[] {
+  const refs = new Set<string>();
+  for (const match of source.matchAll(/@augur ux:\s*([^\r\n]+)/g)) {
+    for (const ref of match[1]!.split(',')) {
+      const normalized = ref.trim();
+      if (normalized !== '') refs.add(normalized);
+    }
+  }
+  return [...refs].sort();
 }

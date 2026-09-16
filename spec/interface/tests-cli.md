@@ -34,6 +34,7 @@ shell 不要、`--json` で機械可読、exit code は下表。
 | `report <runId> [--json\|--markdown]` | 判断者向け報告 | − |
 | `verdict <runId> --accept\|--reject --by <who> [--note <text>]` | 判断を記録 | − (キャッシュへ) |
 | `flag <runId> --pr <revisorPrId> [--revisor-url <u>]` | Revisor へ保証フラグ ([revisor-verification.md](./revisor-verification.md)) | − |
+| `evidence <runId> [--repo <wt>] [--dry-run] [--json]` | run 結果を Praeforma の scenario / use case evidence として登録 | ○ (run cache) |
 | `runs [--repo] [--head <sha>] [--since <iso>] [--status s] [--json]` | キャッシュ一覧 | − |
 | `sweep --repo <wt> [--now <iso>] [--apply]` | 退役判定。既定は提案表示、`--apply` で台帳更新 | ○ (`--apply`) |
 | `revive <testId> --repo <wt>` | `retired` → `active` | ○ |

@@ -163,7 +163,7 @@ export function retainRuns(runs: readonly RunRecord[], policy: RunCachePolicy, n
   const byRepository = new Map<string, RunRecord[]>();
   for (const run of runs) {
     const ageDays = (nowMs - Date.parse(run.finishedAt)) / 86_400_000;
-    const protectedRun = run.verdict !== undefined || run.flag !== undefined;
+    const protectedRun = run.verdict !== undefined || run.flag !== undefined || run.evidence !== undefined;
     const limit = policy.retentionDays * (protectedRun ? 3 : 1);
     if (ageDays > limit) continue;
     const group = byRepository.get(run.repository) ?? [];
@@ -177,7 +177,7 @@ export function retainRuns(runs: readonly RunRecord[], policy: RunCachePolicy, n
     let normal = 0;
     let protectedCount = 0;
     for (const run of ordered) {
-      if (run.verdict !== undefined || run.flag !== undefined) {
+      if (run.verdict !== undefined || run.flag !== undefined || run.evidence !== undefined) {
         protectedCount += 1;
         if (protectedCount <= policy.maxRunsPerRepository * 3) retained.push(run);
       } else {

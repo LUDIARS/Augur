@@ -4,6 +4,15 @@
   "importFrom": "@ludiars/log-weaver",
   "contracts": [
     {
+      "id": "C-1",
+      "criterion": "C-1 createReport(run, records): evidence を持つ run は登録件数と未解決 uxRef を報告へ保持し、証拠の無い run に evidence 節を作らない",
+      "symbol": "createReport",
+      "file": "src/tests/report.ts",
+      "module": "contracts/praeforma-evidence.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C3-1",
       "criterion": "C3-1 aggregateContracts(events, contracts): 同じ入力から byte-identical な集計、指定期間かつ現行 marker id の observed 0 件は uncovered、violated または predicate threw 1 件以上は violated",
       "symbol": "aggregateContracts",

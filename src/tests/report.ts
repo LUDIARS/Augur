@@ -9,6 +9,7 @@ export type Report = RunRecord & {
   contracts?: ContractsSummary;
 };
 
+/** @implements SPEC-PRAEFORMA-EVIDENCE */
 export function createReport(
   run: RunRecord,
   records: readonly TestRecord[],
@@ -40,6 +41,9 @@ export function formatReportText(report: Report): string {
     lines.push('');
   }
   if (report.contracts !== undefined) lines.push(...contractLines(report.contracts), '');
+  if (report.evidence !== undefined || report.unresolvedUxRefs !== undefined) {
+    lines.push(`Evidence: ${report.evidence?.length ?? 0} registered, ${report.unresolvedUxRefs?.length ?? 0} unresolved uxRefs`, '');
+  }
   lines.push(`Summary: ${report.summary.passed} passed, ${report.summary.failed} failed, ${report.summary.error} error, ${report.summary.skipped} skipped`);
   if (report.verdict !== undefined) lines.push(`Verdict: ${report.verdict.decision} by ${report.verdict.by}`);
   return `${lines.join('\n')}\n`;
@@ -82,6 +86,9 @@ export function formatReportMarkdown(report: Report): string {
       lines.push(`- ${entry.state} \`${entry.id}\` \`${entry.symbol}\` calls ${entry.calls}, violations ${entry.violationTotal}${detail}`);
     }
     lines.push('', summaryLine(report.contracts), '');
+  }
+  if (report.evidence !== undefined || report.unresolvedUxRefs !== undefined) {
+    lines.push('### Evidence', '', `Registered ${report.evidence?.length ?? 0}; unresolved uxRefs: ${(report.unresolvedUxRefs ?? []).join(', ') || 'none'}.`, '');
   }
   lines.push(`Passed ${report.summary.passed}/${report.summary.total}; failed ${report.summary.failed}; errors ${report.summary.error}; skipped ${report.summary.skipped}.`);
   return `${lines.join('\n')}\n`;

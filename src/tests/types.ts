@@ -32,6 +32,7 @@ export const testRecordSchema = z.object({
     program: z.array(z.string()).min(1),
   }).strict(),
   anchors: z.array(z.string()),
+  uxRefs: z.array(z.string().min(1)).optional(),
   origin: z.object({
     type: originTypeSchema,
     ref: z.string(),
@@ -112,6 +113,14 @@ export const runRecordSchema = z.object({
   status: z.enum(['passed', 'failed', 'error']),
   verdict: verdictSchema.optional(),
   flag: flagResultSchema.optional(),
+  evidence: z.array(z.object({
+    testId: z.string(),
+    targetKind: z.enum(['scenario', 'use_case']),
+    targetId: z.string(),
+    evidenceId: z.string(),
+    at: z.string().datetime(),
+  }).strict()).optional(),
+  unresolvedUxRefs: z.array(z.string().min(1)).optional(),
 }).strict();
 
 export const authoringBriefSchema = z.object({
@@ -232,6 +241,7 @@ export interface RegisterInput {
   program: string[];
   business?: string[];
   anchors?: string[];
+  uxRefs?: string[];
   runtime?: boolean;
   always?: boolean;
 }
@@ -247,6 +257,17 @@ export interface RunInput {
   forRevisor?: boolean | undefined;
   /** Internal reservation used by the HTTP async adapter. */
   runId?: string | undefined;
+}
+
+export interface PraeformaEvidenceResult {
+  attempted: number;
+  registered: number;
+  skipped: number;
+  failed: Array<{ testId: string; targetId: string; message: string }>;
+  unresolvedUxRefs: string[];
+  evidence: RunRecord['evidence'];
+  planned: Array<{ testId: string; targetKind: 'scenario' | 'use_case'; targetId: string; body: Record<string, unknown> }>;
+  dryRun: boolean;
 }
 
 export interface LintResult { valid: boolean; errors: string[] }
