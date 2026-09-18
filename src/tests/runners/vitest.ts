@@ -3,6 +3,7 @@ import type { BusOutput } from '../../bus/types.ts';
 import type { RunnerConfig } from '../config.ts';
 import type { RunResult, TestRecord } from '../types.ts';
 import { outputTail, type Invocation, type Runner } from './types.ts';
+import { fileLevelResult, isFileLevelTest, type FileAssertion } from './vitest-file-result.ts';
 
 interface VitestAssertion {
   ancestorTitles?: unknown;
@@ -100,7 +101,11 @@ function parseJsonReport(stdout: string): VitestReport {
 function parseTest(test: TestRecord, files: readonly VitestFileResult[], output: BusOutput): RunResult {
   const file = files.find((candidate) => sameFile(candidate.name, test.file));
   const assertions = Array.isArray(file?.assertionResults) ? file.assertionResults as VitestAssertion[] : [];
-  const assertion = assertions.find((candidate) => assertionName(candidate) === test.name)
+  if (file !== undefined && isFileLevelTest(test)) {
+    const result = fileLevelResult(test, assertions.map(fileAssertion), typeof file.message === 'string' ? file.message : '');
+    return result.status === 'passed' || result.status === 'skipped' ? result : { ...result, outputTail: outputTail(output) };
+  }
+  const assertion =assertions.find((candidate) => assertionName(candidate) === test.name)
     ?? (test.selector !== undefined ? assertions.find((candidate) => assertionName(candidate) === test.selector) : undefined)
     ?? assertions.find((candidate) => assertionName(candidate).startsWith(`${test.name} `));
   if (assertion === undefined) return errorResult(test, output, 'not found in reporter output');
@@ -135,6 +140,16 @@ function assertionName(assertion: VitestAssertion): string {
     ? assertion.ancestorTitles.filter((value): value is string => typeof value === 'string')
     : [];
   return [...ancestors, typeof assertion.title === 'string' ? assertion.title : ''].filter(Boolean).join(' ');
+}
+
+function fileAssertion(assertion: VitestAssertion): FileAssertion {
+  return {
+    status: assertionStatus(assertion.status),
+    durationMs: typeof assertion.duration === 'number' ? assertion.duration : 0,
+    failureMessages: Array.isArray(assertion.failureMessages)
+      ? assertion.failureMessages.filter((value): value is string => typeof value === 'string')
+      : [],
+  };
 }
 
 function assertionStatus(value: unknown): RunResult['status'] {

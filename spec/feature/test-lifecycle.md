@@ -88,7 +88,7 @@ interface Runner {
 
 | runner | 起動 | 解析 |
 |---|---|---|
-| `vitest` | `node node_modules/vitest/vitest.mjs run <files…> --reporter=json` (selector があれば `-t`)。設定された `npx vitest` 前置も同形へ正規化する | JSON reporter の `testResults[].assertionResults[]` を (file, fullName) で台帳へ突き合わせ。見つからない台帳テストは `error` ("not found in reporter output") |
+| `vitest` | `node node_modules/vitest/vitest.mjs run <files…> --reporter=json` (selector があれば `-t`)。設定された `npx vitest` 前置も同形へ正規化する | JSON reporter の `testResults[].assertionResults[]` を (file, fullName) で台帳へ突き合わせ。見つからない台帳テストは `error` ("not found in reporter output")。`name` が自身の `file` と同じで selector の無い台帳テストはファイル単位の登録とみなし、そのファイルの全 assertion で判定する (1 件でも failed なら failed、assertion 0 件で file message があれば failed、全 skipped なら skipped、assertion 0 件かつ message 無しは error) |
 | `command` | `TestRecord.command` をそのまま | exit 0 → passed、それ以外 failed、起動失敗 → error |
 | `cargo` / `gtest` / `unity` | T1 では `command` のプリセット (argv を組むだけ) | exit code 解析のみ。構造化解析は後続 |
 
