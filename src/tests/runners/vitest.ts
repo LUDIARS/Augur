@@ -4,6 +4,7 @@ import type { RunnerConfig } from '../config.ts';
 import type { RunResult, TestRecord } from '../types.ts';
 import { outputTail, type Invocation, type Runner } from './types.ts';
 import { fileLevelResult, isFileLevelTest, type FileAssertion } from './vitest-file-result.ts';
+import { parseJsonReport, type VitestReport } from './vitest-json-report.ts';
 
 interface VitestAssertion {
   ancestorTitles?: unknown;
@@ -20,8 +21,6 @@ interface VitestFileResult {
   assertionResults?: unknown;
   message?: unknown;
 }
-
-interface VitestReport { testResults?: unknown }
 
 /**
  * The bus spawns without a shell (spec feature/test-lifecycle.md §3.1), and on
@@ -87,16 +86,6 @@ function uniqueFiles(tests: readonly TestRecord[]): string[] {
   return [...new Set(tests.map((test) => test.file))].sort();
 }
 
-function parseJsonReport(stdout: string): VitestReport {
-  try {
-    return JSON.parse(stdout) as VitestReport;
-  } catch {
-    const start = stdout.indexOf('{');
-    const end = stdout.lastIndexOf('}');
-    if (start < 0 || end <= start) throw new Error('JSON document not found');
-    return JSON.parse(stdout.slice(start, end + 1)) as VitestReport;
-  }
-}
 
 function parseTest(test: TestRecord, files: readonly VitestFileResult[], output: BusOutput): RunResult {
   const file = files.find((candidate) => sameFile(candidate.name, test.file));
