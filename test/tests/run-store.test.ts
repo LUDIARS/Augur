@@ -1,12 +1,22 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { JsonlRunStore } from '../../src/tests/run-store.ts';
 import { deriveRunStatus, type RunResult } from '../../src/tests/types.ts';
 import { runRecord } from './fixtures.ts';
 
 describe('run-store retention', () => {
+  // put は実時刻で保持期限を掃除するため、記録の日付 (fixture は 2026-08-23) に時計を合わせる。
+  // 合わせないと日付が過ぎた時点で全件が期限切れになり、テストが時間経過で落ちる。
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-23T00:05:00.000Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('uses retentionDays and keeps verdict/flag evidence for 3x as long', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'augur-run-store-'));
     const store = new JsonlRunStore(join(directory, 'runs.jsonl'), { retentionDays: 30, maxRunsPerRepository: 20 });

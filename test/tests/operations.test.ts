@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../src/app.ts';
 import { runTestsCommand } from '../../src/cli/tests/index.ts';
 import { createTestOperations } from '../../src/operations/tests.ts';
@@ -12,6 +12,15 @@ import { augurConfig, makeRepository, record, runRecord } from './fixtures.ts';
 import { analysis, program, stores } from './plan/fixtures.ts';
 
 describe('operations adapter parity', () => {
+  // fixture の記録は 2026-08-23 付け。put は実時刻で保持期限を掃除するため、時計を合わせる
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-23T00:05:00.000Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('returns equal JSON through HTTP and CLI for list, runs, and report', async () => {
     const root = mkdtempSync(join(tmpdir(), 'augur-operations-'));
     const repo = join(root, 'repo');

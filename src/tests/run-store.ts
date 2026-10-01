@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { runRecordSchema, type RunQuery, type RunRecord } from './types.ts';
+import { configureConcurrentWrites } from './sqlite-concurrency.ts';
 
 export interface RunCachePolicy {
   retentionDays: number;
@@ -107,6 +108,7 @@ export class SqliteRunStore implements RunStore {
     this.policy = policy;
     mkdirSync(resolve(path, '..'), { recursive: true });
     this.database = new Database(path);
+    configureConcurrentWrites(this.database);
     this.database.exec(`
       CREATE TABLE IF NOT EXISTS runs (
         run_id TEXT PRIMARY KEY,
