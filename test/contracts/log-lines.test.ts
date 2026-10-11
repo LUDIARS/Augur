@@ -1,5 +1,4 @@
-import { createReadStream, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import * as fileSystem from 'node:fs';
+import { ReadStream, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -58,18 +57,17 @@ describe('streamed contract log lines', () => {
 
   it('closes the owned stream when the consumer stops early', async () => {
     const dir = fixture();
-    writeFileSync(join(dir, 'events.jsonl'), 'first\nsecond\n');
-    let opened: ReturnType<typeof createReadStream> | undefined;
-    const open = fileSystem.createReadStream;
-    vi.spyOn(fileSystem, 'createReadStream').mockImplementation((...args) => {
-      opened = open(...args);
-      return opened;
-    });
+    const path = join(dir, 'events.jsonl');
+    writeFileSync(path, 'first\nsecond\n');
+    // ESM namespace exports are read-only. Observe the real stream lifecycle
+    // instead of replacing the filesystem factory exported by node:fs.
+    const destroy = vi.spyOn(ReadStream.prototype, 'destroy');
     for await (const line of readWeaverLogLines(dir)) {
       expect(line).toBe('first');
       break;
     }
-    expect(opened?.destroyed).toBe(true);
+    expect(destroy.mock.contexts.some((stream) =>
+      stream instanceof ReadStream && stream.path === path && stream.destroyed)).toBe(true);
   });
 
   it('propagates a later file read failure instead of returning partial evidence', async () => {
