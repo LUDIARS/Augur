@@ -7,8 +7,8 @@
 // injector's job (src/inject/contract-markers.ts), and contract-observation
 // stays free of a dependency on the rule that happens to write them.
 
-import { aggregateContracts, type ContractWindow, type ContractsSummary } from './aggregate.ts';
-import { normalizeContractEvents } from './events.ts';
+import { createContractAccumulator, type ContractWindow, type ContractsSummary } from './aggregate.ts';
+import { normalizeContractEvent } from './events.ts';
 import type { ContractsManifest } from './manifest.ts';
 import { loadContractsManifest, readWeaverLogLines, resolveLogsDir } from './project.ts';
 
@@ -38,8 +38,12 @@ export async function collectContractSummary(
   if (manifest === null) return null;
 
   const logsDir = resolveLogsDir(projectDir, options.logsDir);
-  const scan = normalizeContractEvents(readWeaverLogLines(logsDir));
   const markers = await options.markers(projectDir);
-  const summary = aggregateContracts(scan.events, manifest.contracts, markers, options.window ?? {});
+  const accumulator = createContractAccumulator(manifest.contracts, markers, options.window ?? {});
+  for await (const line of readWeaverLogLines(logsDir)) {
+    const event = normalizeContractEvent(line);
+    if (event !== null) accumulator.add(event);
+  }
+  const summary = accumulator.finish();
   return { manifest, logsDir, summary };
 }

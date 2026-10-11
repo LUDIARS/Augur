@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { aggregateContracts } from '../../src/contracts/aggregate.ts';
+import { aggregateContracts, createContractAccumulator } from '../../src/contracts/aggregate.ts';
 import { normalizeContractEvents } from '../../src/contracts/events.ts';
 import { parseContractsManifest, type ContractEntry } from '../../src/contracts/manifest.ts';
 
@@ -106,6 +106,25 @@ describe('aggregateContracts', () => {
     const summary = aggregateContracts(eventsOf(lines), CONTRACTS, MARKERS);
     expect(summary.contracts[1]?.latestReasons.map((reason) => reason.reason)).toEqual(['fourth', 'third', 'second']);
     expect(summary.contracts[1]?.latestReasons[0]?.phase).toBe('invariant');
+  });
+
+  it('keeps time ordering, late-arriving old events and input-order ties across incremental additions', () => {
+    const accumulator = createContractAccumulator(CONTRACTS, MARKERS);
+    const lines = [
+      violated('C-2', 'm2', '', 'post', 'undated'),
+      violated('C-2', 'm2', '2026-09-05T00:00:04.000Z', 'post', 'newest'),
+      violated('C-2', 'm2', '2026-09-05T00:00:03.000Z', 'post', 'earlier tie'),
+      violated('C-2', 'm2', '2026-09-05T00:00:01.000Z', 'post', 'late old event'),
+      violated('C-2', 'm2', '2026-09-05T00:00:03.000Z', 'post', 'later tie'),
+      violated('C-2', 'm2', '', 'post', 'last undated'),
+    ];
+    for (const event of eventsOf(lines)) accumulator.add(event);
+    const summary = accumulator.finish();
+    expect(summary.contracts[1]?.latestReasons.map((reason) => reason.reason))
+      .toEqual(['newest', 'later tie', 'earlier tie']);
+    expect(summary.contracts[1]).toMatchObject({ calls: 6, violationTotal: 6 });
+    expect(summary.diagnostics).toEqual({ events: 6, matched: 6, foreign: 0, outOfWindow: 0, undated: 2 });
+    expect(accumulator.finish()).toEqual(summary);
   });
 
   // The acceptance report is quoted into a delegation's completion report, so a

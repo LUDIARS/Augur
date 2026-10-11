@@ -18,6 +18,7 @@
     }
   ],
   "specRefs": [
+    "spec/tasks/2026-10-11-contract-log-streaming.md",
     "spec/plan/2026-09-05-live-contract-testing.md",
     "spec/tasks/2026-09-05-contract-wrap-inject-rule.md",
     "spec/tasks/2026-09-05-contracts-report-aggregation.md",

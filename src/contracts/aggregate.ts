@@ -93,11 +93,29 @@ type Bucket = {
 
 /** @implements SPEC-CONTRACTS-REPORT-AGGREGATION */
 export function aggregateContracts(
-  events: readonly ContractEvent[],
+  events: Iterable<ContractEvent>,
   contracts: readonly ContractEntry[],
   activeMarkers: ReadonlyMap<string, string>,
   window: ContractWindow = {},
 ): ContractsSummary {
+  const accumulator = createContractAccumulator(contracts, activeMarkers, window);
+  for (const event of events) accumulator.add(event);
+  return accumulator.finish();
+}
+
+export type ContractAccumulator = {
+  add: (event: ContractEvent) => void;
+  finish: () => ContractsSummary;
+};
+
+/** Pure incremental report state; never retains the complete event history.
+ * @implements SPEC-CONTRACT-LOG-STREAMING
+ */
+export function createContractAccumulator(
+  contracts: readonly ContractEntry[],
+  activeMarkers: ReadonlyMap<string, string>,
+  window: ContractWindow = {},
+): ContractAccumulator {
   const buckets = new Map<string, Bucket>();
   for (const contract of contracts) buckets.set(contract.id, emptyBucket());
 
@@ -105,8 +123,11 @@ export function aggregateContracts(
   let foreign = 0;
   let outOfWindow = 0;
   let undated = 0;
+  let events = 0;
 
-  events.forEach((event, index) => {
+  /** @implements SPEC-CONTRACT-LOG-STREAMING */
+  const add = (event: ContractEvent): void => {
+    const index = events++;
     const bucket = buckets.get(event.contractId);
     const activeMarker = activeMarkers.get(event.contractId);
     // A missing marker must never authenticate an event whose marker is also
@@ -127,22 +148,26 @@ export function aggregateContracts(
     }
     matched += 1;
     accumulate(bucket, event, index);
-  });
-
-  const summaries = contracts.map(
-    (contract) => summarize(contract, buckets.get(contract.id) ?? emptyBucket(), activeMarkers.get(contract.id) ?? null),
-  );
-
-  return {
-    window: { since: window.since ?? null, until: window.until ?? null },
-    totals: {
-      covered: summaries.filter((entry) => entry.state === 'covered').length,
-      violated: summaries.filter((entry) => entry.state === 'violated').length,
-      uncovered: summaries.filter((entry) => entry.state === 'uncovered').length,
-    },
-    diagnostics: { events: events.length, matched, foreign, outOfWindow, undated },
-    contracts: summaries,
   };
+
+  /** @implements SPEC-CONTRACT-LOG-STREAMING */
+  const finish = (): ContractsSummary => {
+    const summaries = contracts.map(
+      (contract) => summarize(contract, buckets.get(contract.id) ?? emptyBucket(), activeMarkers.get(contract.id) ?? null),
+    );
+
+    return {
+      window: { since: window.since ?? null, until: window.until ?? null },
+      totals: {
+        covered: summaries.filter((entry) => entry.state === 'covered').length,
+        violated: summaries.filter((entry) => entry.state === 'violated').length,
+        uncovered: summaries.filter((entry) => entry.state === 'uncovered').length,
+      },
+      diagnostics: { events, matched, foreign, outOfWindow, undated },
+      contracts: summaries,
+    };
+  };
+  return { add, finish };
 }
 
 /** @implements SPEC-CONTRACTS-REPORT-AGGREGATION */
@@ -164,6 +189,8 @@ function accumulate(bucket: Bucket, event: ContractEvent, index: number): void {
     const phase = event.kind === 'predicate-threw' ? 'predicate' : violationPhase(event.phase);
     bucket.violations[phase] += 1;
     bucket.reasons.push({ event, index });
+    bucket.reasons.sort(compareRecency);
+    if (bucket.reasons.length > LATEST_REASONS) bucket.reasons.length = LATEST_REASONS;
   }
   if (event.observedAt === undefined) return;
   if (bucket.firstSeen === null || event.observedAt < bucket.firstSeen) bucket.firstSeen = event.observedAt;

@@ -3,12 +3,14 @@
 // pure, so both the lint CLI and the injector reach the disk through here and
 // nowhere else.
 
-import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import type { ContractsManifest } from './manifest.ts';
 import { CONTRACTS_MANIFEST_NAME, parseContractsManifest } from './manifest.ts';
 import type { PredicateModuleState } from './predicate.ts';
 import { classifyPredicateSource } from './predicate.ts';
+
+export { readWeaverLogLines } from './log-lines.ts';
 
 export function contractsManifestPath(projectDir: string): string {
   return join(projectDir, CONTRACTS_MANIFEST_NAME);
@@ -47,27 +49,6 @@ export function resolveLogsDir(
   const configured = env.VESTIGIUM_LOGS_DIR;
   if (configured !== undefined && configured !== '') return resolve(configured);
   return resolve(projectDir, 'logs');
-}
-
-/**
- * Every line of every `*.jsonl` in `logsDir`, in filename order so two runs over
- * an unchanged directory read the same sequence. A missing directory is not an
- * error: a project that has never run under the weaver simply has no evidence.
- * @implements SPEC-CONTRACTS-REPORT-AGGREGATION
- */
-export function readWeaverLogLines(logsDir: string): string[] {
-  if (!existsSync(logsDir) || !statSync(logsDir).isDirectory()) return [];
-  const files = readdirSync(logsDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.jsonl'))
-    .map((entry) => entry.name)
-    .sort();
-  const lines: string[] = [];
-  for (const name of files) {
-    for (const line of readFileSync(join(logsDir, name), 'utf8').split('\n')) {
-      if (line.trim() !== '') lines.push(line);
-    }
-  }
-  return lines;
 }
 
 /** Resolve an existing manifest path and reject symlinks that leave the project. */
