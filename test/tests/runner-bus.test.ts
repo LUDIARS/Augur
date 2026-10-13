@@ -48,7 +48,7 @@ describe('vitest JSON runner', () => {
       stderr: '',
       timedOut: false,
     });
-    expect(results[0]).toMatchObject({ status: 'error', failureMessage: 'not found in reporter output' });
+    expect(results[0]).toMatchObject({ status: 'error', failureMessage: expect.stringContaining('not found in reporter output') });
   });
 
   it('matches a selector when the registry display name differs', () => {

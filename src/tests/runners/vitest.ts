@@ -97,7 +97,14 @@ function parseTest(test: TestRecord, files: readonly VitestFileResult[], output:
   const assertion =assertions.find((candidate) => assertionName(candidate) === test.name)
     ?? (test.selector !== undefined ? assertions.find((candidate) => assertionName(candidate) === test.selector) : undefined)
     ?? assertions.find((candidate) => assertionName(candidate).startsWith(`${test.name} `));
-  if (assertion === undefined) return errorResult(test, output, 'not found in reporter output');
+  if (assertion === undefined) {
+    if (file === undefined) {
+      const reported = files.map((candidate) => candidate.name).filter((name): name is string => typeof name === 'string');
+      return errorResult(test, output, `file ${test.file} not found in reporter output; reporter files:\n${candidateList(reported)}`);
+    }
+    return errorResult(test, output,
+      `test "${test.name}" not found in reporter output for ${test.file}; reporter tests:\n${candidateList(assertions.map(assertionName))}`);
+  }
 
   const status = assertionStatus(assertion.status);
   const messages = Array.isArray(assertion.failureMessages)
@@ -148,13 +155,29 @@ function assertionStatus(value: unknown): RunResult['status'] {
   return 'error';
 }
 
-function sameFile(reporterName: unknown, registeredFile: string): boolean {
+/**
+ * Reporter file names are absolute worktree paths while the ledger keeps
+ * repo-relative ones. Separators are unified, and on Windows the comparison
+ * ignores case because drive letters and directory names arrive in either case.
+ */
+export function sameFile(reporterName: unknown, registeredFile: string, platform: NodeJS.Platform = process.platform): boolean {
   if (typeof reporterName !== 'string') return false;
-  const normalized = reporterName.replaceAll('\\', '/');
-  const expected = registeredFile.replaceAll('\\', '/');
+  const fold = (value: string) => {
+    const unified = value.replaceAll('\\', '/');
+    return platform === 'win32' ? unified.toLowerCase() : unified;
+  };
+  const normalized = fold(reporterName);
+  const expected = fold(registeredFile).replace(/^\.\//, '');
   if (normalized === expected || normalized.endsWith(`/${expected}`)) return true;
-  if (isAbsolute(reporterName)) return relative(resolve(reporterName), resolve(registeredFile)) === '';
+  if (isAbsolute(reporterName)) return fold(relative(resolve(reporterName), resolve(registeredFile))) === '';
   return false;
+}
+
+/** Up to `limit` names the reporter did produce, so a mismatch can be diagnosed from the run record. */
+function candidateList(names: readonly string[], limit = 10): string {
+  if (names.length === 0) return '(none)';
+  const shown = names.slice(0, limit).map((name) => `  - ${name}`).join('\n');
+  return names.length > limit ? `${shown}\n  … ${names.length - limit} more` : shown;
 }
 
 function errorResult(test: TestRecord, output: BusOutput, message: string): RunResult {
