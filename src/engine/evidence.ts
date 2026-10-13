@@ -1,9 +1,10 @@
-import type { Evidence, ExperienceExemption, FocusedDomain, RuntimeSignal } from '../schema/index.ts';
+import type { AnatomiaDomain, Evidence, ExperienceExemption, FocusedDomain, RuntimeSignal } from '../schema/index.ts';
 import type { EvidenceRefs, NormalizedFacts, ResolvedBudget } from './types.ts';
 
 // Stage 3 of the pipeline: every downstream suggestion, fix step, and risk
 // must trace back to entries created here. Ordering is fixed
-// (spec/implementation-design.md): objective -> project -> focused domains -> change -> failure
+// (spec/implementation-design.md): objective -> project -> focused domains -> Anatomia domains
+// -> change -> failure
 // -> coverage -> runtime -> experience goals -> exemptions -> violations.
 
 function firstLine(text: string | undefined): string {
@@ -57,6 +58,20 @@ export function extractEvidence(facts: NormalizedFacts): EvidenceRefs {
       push({
         type: 'focused_test_focus',
         detail: `Anatomia focused domain "${domain.domain}" at ${domain.priority} priority with risks ${domain.risks.join(', ')}${domain.inferredRisks !== undefined ? ' (mechanically inferred)' : ' (caller-selected)'} across ${domain.targets.length} analyzed target(s).${variableDetail}`,
+      }),
+    );
+  }
+
+  const anatomiaDomainIds = new Map<AnatomiaDomain, string>();
+  for (const domain of facts.anatomiaDomains) {
+    const files = domain.files !== undefined && domain.files.length > 0
+      ? ` Changed files: ${domain.files.join(', ')}.`
+      : '';
+    anatomiaDomainIds.set(
+      domain,
+      push({
+        type: 'anatomia_domain',
+        detail: `Change lands in Anatomia ${domain.layer} domain "${domain.name}" (src membership ${domain.membership.src ? 'yes' : 'no'}, tests membership ${domain.membership.tests ? 'yes' : 'no'}).${files}`,
       }),
     );
   }
@@ -164,5 +179,6 @@ export function extractEvidence(facts: NormalizedFacts): EvidenceRefs {
     exemptionIds,
     violationIds,
     focusedDomainIds,
+    anatomiaDomainIds,
   };
 }

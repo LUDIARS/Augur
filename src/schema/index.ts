@@ -172,6 +172,35 @@ export const focusedTestingSchema = z.object({
   });
 });
 
+// Anatomia's own domain concept (landing domain + two-layer membership). Named
+// apart from `project.domain`, which is Augur's web|game|service|other enum.
+export const anatomiaDomainLayerSchema = z.enum(['program', 'business']);
+
+export const anatomiaDomainSchema = z.object({
+  name: z.string().min(1),
+  layer: anatomiaDomainLayerSchema,
+  files: z.array(z.string().min(1)).optional(),
+  membership: z.object({
+    src: z.boolean(),
+    tests: z.boolean(),
+  }),
+});
+
+export const anatomiaDomainsSchema = z.array(anatomiaDomainSchema).min(1).superRefine((domains, ctx) => {
+  const seen = new Set<string>();
+  domains.forEach((domain, index) => {
+    const key = `${domain.layer}:${domain.name}`;
+    if (seen.has(key)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index, 'name'],
+        message: `duplicate Anatomia domain "${domain.name}" in layer ${domain.layer}`,
+      });
+    }
+    seen.add(key);
+  });
+});
+
 export const createPlanRequestSchema = z.object({
   objective: objectiveSchema,
   project: projectContextSchema.optional(),
@@ -182,6 +211,7 @@ export const createPlanRequestSchema = z.object({
   experienceGoals: z.array(experienceGoalSchema).optional(),
   constraints: z.array(planningConstraintSchema).optional(),
   focusedTesting: focusedTestingSchema.optional(),
+  anatomiaDomains: anatomiaDomainsSchema.optional(),
 });
 
 export const testDraftSchema = z.object({
@@ -262,6 +292,7 @@ export const evidenceTypeSchema = z.enum([
   'budget_exemption',
   'project_metadata',
   'focused_test_focus',
+  'anatomia_domain',
 ]);
 
 export const evidenceSchema = z.object({
@@ -301,6 +332,8 @@ export type FocusedVariable = z.infer<typeof focusedVariableSchema>;
 export type FocusedTarget = z.infer<typeof focusedTargetSchema>;
 export type FocusedDomain = z.infer<typeof focusedDomainSchema>;
 export type FocusedTesting = z.infer<typeof focusedTestingSchema>;
+export type AnatomiaDomainLayer = z.infer<typeof anatomiaDomainLayerSchema>;
+export type AnatomiaDomain = z.infer<typeof anatomiaDomainSchema>;
 export type CreatePlanRequest = z.infer<typeof createPlanRequestSchema>;
 export type TestDraft = z.infer<typeof testDraftSchema>;
 export type TestKind = z.infer<typeof testKindSchema>;

@@ -70,6 +70,33 @@ by Anatomia rather than caller-selected.
 Focused candidates are combined with the ordinary objective rule candidates before stable
 priority/confidence ranking. Existing suggestions are not deleted.
 
+## Anatomia Landing Domains
+
+`anatomiaDomains` (optional, separate from `focusedTesting`) carries the Anatomia domains a change
+lands in. It is named apart from `project.domain`, which is Augur's `web|game|service|other` enum
+and unrelated to Anatomia's domain concept.
+
+```ts
+type AnatomiaDomain = {
+  name: string;                       // Anatomia domain name
+  layer: "program" | "business";      // Anatomia two-layer model
+  files?: string[];                   // changed files that landed in this domain
+  membership: { src: boolean; tests: boolean }; // does the domain have src / tests members
+};
+// CreatePlanRequest.anatomiaDomains?: AnatomiaDomain[] (min 1, unique per layer + name)
+```
+
+Each entry becomes one `anatomia_domain` evidence item, placed right after the focused-domain
+evidence. `src/engine/anatomiaDomains.ts` then emits:
+
+| signal | suggestion | priority |
+|---|---|---|
+| `membership.src && !membership.tests` | pair the change with a domain test (`unit` for program, `integration` for business) | `high` |
+| 2+ domains in the same layer | one cross-domain `integration` test over their boundary | `medium`, `high` at 3+ domains |
+
+Without `anatomiaDomains` the plan is unchanged (no evidence, no suggestions). The Anatomia side
+(`test-suggestions` → `augur plan` bridge) assembling this field is a separate Anatomia task.
+
 ## Guarantees
 
 - Same request produces byte-identical output.

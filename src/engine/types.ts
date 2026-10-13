@@ -1,4 +1,5 @@
 import type {
+  AnatomiaDomain,
   CoverageSignal,
   Evidence,
   ExperienceExemption,
@@ -58,6 +59,7 @@ export type NormalizedFacts = {
   unquantifiedCustomGoals: number;
   constraints: PlanningConstraint[];
   focusedDomains: FocusedDomain[];
+  anatomiaDomains: AnatomiaDomain[]; // Anatomia landing domains (two-layer membership)
   conflictingSignals: string[]; // human descriptions of contradictory inputs
   frameworks: string[];
   testRunners: string[];
@@ -77,6 +79,7 @@ export type EvidenceRefs = {
   exemptionIds: Map<ExperienceExemption, string>;
   violationIds: Map<RuntimeSignal, string>;
   focusedDomainIds: Map<FocusedDomain, string>;
+  anatomiaDomainIds: Map<AnatomiaDomain, string>;
 };
 
 export type CandidateSuggestion = {

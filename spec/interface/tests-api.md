@@ -69,7 +69,7 @@ worktree (使い捨て) を指すときは `repoPath` を直接渡す。
 | POST | `/v1/tests/runs` | body = `RunInput` (`{ repository\|repoPath, bundle, head?, bus?, cached? }`) → `RunRecord`。同期。長い場合は `?async=1` で `202 { runId }` を返し `GET /v1/tests/runs/:runId` で追う |
 | GET | `/v1/tests/runs?repository=&head=&since=&status=` | キャッシュ一覧 |
 | GET | `/v1/tests/runs/:runId` | `RunRecord` |
-| GET | `/v1/tests/runs/:runId/report?format=json\|markdown` | 報告 |
+| GET | `/v1/tests/runs/:runId/report?format=json\|markdown` | 報告 (契約ファイルがあれば `contracts` 節。§3.1) |
 | POST | `/v1/tests/runs/:runId/verdict` | body = `Verdict` |
 | POST | `/v1/tests/runs/:runId/flag` | body `{ pullRequestId }` → `FlagResult` |
 
@@ -121,12 +121,28 @@ stdio transport。クライアント設定例 (Claude Code):
 | `augur_tests_register_from_plan` | `{ planId, repoPath }` | 登録結果 |
 | `augur_tests_author` | `{ planId, repoPath, author, bus?, before? }` | `AuthorResult` |
 | `augur_tests_run` | `RunInput` | `RunRecord` |
-| `augur_tests_report` | `{ runId, format? }` | 報告 (markdown 既定。LLM が読む前提) |
+| `augur_tests_report` | `{ runId, format? }` | 報告 (markdown 既定。LLM が読む前提。契約ファイルがあれば `### Contracts` 節。§3.1) |
 | `augur_tests_verdict` | `{ runId, decision, by, note? }` | `RunRecord` |
 | `augur_tests_flag` | `{ runId, pullRequestId }` | `FlagResult` |
 | `augur_tests_runs` | `RunQuery` | `RunRecord[]` |
 
 MCP resource: `augur://tests/<repository>/catalog` (= catalog の JSON)。
+
+### 3.1 `report` の契約観測節
+
+HTTP `GET /v1/tests/runs/:runId/report` と MCP `augur_tests_report` は
+`operations.report(runId)` の `Report` をそのまま返す薄皮で、CLI `report` と同じ
+`contracts` 節を含みうる。節の窓・集計内容・`flag` の `summary` への合流は
+[tests-cli.md](./tests-cli.md) の「契約観測の合流」が正本で、ここでは定義を二重に書かない。
+
+- `format=json`: 対象リポジトリに `augur.contracts.json` がある場合だけ
+  `contracts: { window, totals, diagnostics, contracts[] }` が付く。契約ファイルが無い
+  リポジトリでは**キーごと現れない** (空の節を返さない)。
+- `format=markdown` (MCP の既定): 同じ条件で `### Contracts` 節として出る。
+- 契約ファイルやログが読めない場合も節を落とすだけで、`report` は失敗しない。
+- 契約ファイルの無いリポジトリで `contracts` が付かないことは
+  `test/tests/report-contracts.test.ts` が `Report` 生成の段で担保する
+  (HTTP / MCP は同じ `Report` を返すだけなので、応答形のテストを別に持たない)。
 
 セッション側の標準手順 (6 ステップの 3〜6) は
 `augur_tests_plan` → (書く) → `augur_tests_register_from_plan` → `augur_tests_run` →

@@ -21,8 +21,14 @@ type CreatePlanRequest = {
   runtimeSignals?: RuntimeSignal[];
   experienceGoals?: ExperienceGoal[];
   constraints?: PlanningConstraint[];
+  focusedTesting?: FocusedTesting;
+  anatomiaDomains?: AnatomiaDomain[];
 };
 ```
+
+The optional `anatomiaDomains` field carries the Anatomia landing domains of the change (layer and
+src/tests membership). Its contract is defined in
+[Focused Testing — Anatomia Landing Domains](../feature/focused-testing.md#anatomia-landing-domains).
 
 ## Objective
 
