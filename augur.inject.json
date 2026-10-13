@@ -1,0 +1,9 @@
+{
+  "service": "augur",
+  "include": [
+    "src/contracts/runtime-files.ts"
+  ],
+  "rules": {
+    "contract-wrap": true
+  }
+}

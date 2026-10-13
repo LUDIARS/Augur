@@ -14,6 +14,8 @@
 import type { ContractEvent, ContractPhase } from './events.ts';
 import type { ContractEntry } from './manifest.ts';
 import { normalizeRepoPath } from './paths.ts';
+import { contract } from '../../templates/contract-runtime/contract-runtime.ts'; /* augur-inject:import:0a83eca8 */
+import augurContract_262b0843 from '../../contracts/aggregate.contract.ts'; /* augur-inject:contract-predicate:83a7f832 */
 
 export type ContractState = 'covered' | 'violated' | 'uncovered';
 
@@ -102,6 +104,8 @@ export function aggregateContracts(
   for (const event of events) accumulator.add(event);
   return accumulator.finish();
 }
+// @ts-expect-error augur-inject
+aggregateContracts = contract(aggregateContracts, { ...augurContract_262b0843, contractId: 'C3-1', mode: 'observe', sample: 1, where: 'src/contracts/aggregate.ts:95', rule: 'contract-wrap', id: '262b0843' }); /* augur-inject:contract-wrap:262b0843 */
 
 export type ContractAccumulator = {
   add: (event: ContractEvent) => void;

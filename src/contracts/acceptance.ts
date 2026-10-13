@@ -7,6 +7,8 @@
 // verdict material.
 
 import type { ContractSummaryEntry, ContractsSummary } from './aggregate.ts';
+import { contract } from '../../templates/contract-runtime/contract-runtime.ts'; /* augur-inject:import:13263558 */
+import augurContract_85d03709 from '../../contracts/acceptance.contract.ts'; /* augur-inject:contract-predicate:399c08e7 */
 
 export type AcceptanceItem = {
   /** The manifest's `criterion`, reproduced byte-for-byte. */
@@ -31,6 +33,8 @@ export function toAcceptanceReport(summary: ContractsSummary): AcceptanceItem[] 
     note: noteFor(entry),
   }));
 }
+// @ts-expect-error augur-inject
+toAcceptanceReport = contract(toAcceptanceReport, { ...augurContract_85d03709, contractId: 'C3-2', mode: 'observe', sample: 1, where: 'src/contracts/acceptance.ts:26', rule: 'contract-wrap', id: '85d03709' }); /* augur-inject:contract-wrap:85d03709 */
 
 // Sampling drops calls the runtime did make, so an `uncovered` under `sample < 1`
 // cannot be told apart from a function that was never reached. Rather than

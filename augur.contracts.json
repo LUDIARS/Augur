@@ -1,7 +1,7 @@
 {
   "version": 1,
   "contractsDir": "contracts",
-  "importFrom": "@ludiars/log-weaver",
+  "importFrom": "../../templates/contract-runtime/contract-runtime.ts",
   "contracts": [
     {
       "id": "C-1",
@@ -45,6 +45,15 @@
       "symbol": "renderContractRuntime",
       "file": "src/contracts/runtime-template.ts",
       "module": "contracts/runtime-render.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-2",
+      "criterion": "C-2 writeRuntimeCopy(projectDir, runtimeFile, text): 成功した書き込みの実体はプロジェクト内にあり要求本文と一致する。外部を指す親リンクは書き込み前に拒否する",
+      "symbol": "writeRuntimeCopy",
+      "file": "src/contracts/runtime-files.ts",
+      "module": "contracts/runtime-write.contract.ts",
       "mode": "observe",
       "sample": 1
     }

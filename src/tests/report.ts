@@ -2,6 +2,8 @@ import { latestText, phaseBreakdown } from '../contracts/acceptance.ts';
 import type { ContractsSummary } from '../contracts/aggregate.ts';
 import { summaryLine } from '../contracts/report-format.ts';
 import type { RunRecord, TestRecord } from './types.ts';
+import { contract } from '../../templates/contract-runtime/contract-runtime.ts'; /* augur-inject:import:d898b897 */
+import augurContract_0f5024ce from '../../contracts/praeforma-evidence.contract.ts'; /* augur-inject:contract-predicate:a385c329 */
 
 export type Report = RunRecord & {
   tests: Record<string, TestRecord>;
@@ -22,6 +24,8 @@ export function createReport(
   }));
   return { ...run, tests, ...(contracts === undefined ? {} : { contracts }) };
 }
+// @ts-expect-error augur-inject
+createReport = contract(createReport, { ...augurContract_0f5024ce, contractId: 'C-1', mode: 'observe', sample: 1, where: 'src/tests/report.ts:13', rule: 'contract-wrap', id: '0f5024ce' }); /* augur-inject:contract-wrap:0f5024ce */
 
 export function formatReportText(report: Report): string {
   const lines = [

@@ -62,7 +62,7 @@ export function existingProjectPath(projectDir: string, repoPath: string): strin
   return statSync(actual).isFile() ? actual : null;
 }
 
-function assertContained(root: string, candidate: string, repoPath: string): void {
+export function assertContained(root: string, candidate: string, repoPath: string): void {
   const rel = relative(root, candidate);
   if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
     throw new Error(`contract path leaves project: ${repoPath}`);

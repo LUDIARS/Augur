@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -66,5 +66,67 @@ describe('augur contracts runtime', () => {
     await expect(run(dir, ['sync', '--path', '../escape.mjs'])).rejects.toThrow(UsageError);
     await expect(run(dir, ['sync', '--path', 'src/runtime.cjs'])).rejects.toThrow(/must end in/);
     await expect(run(dir, ['publish'])).rejects.toThrow(/unknown contracts runtime verb/);
+  });
+});
+
+// Only capability/permission failures skip link cases; other setup errors fail.
+function directoryLink(target: string, path: string): boolean {
+  try {
+    symlinkSync(target, path, process.platform === 'win32' ? 'junction' : 'dir');
+    return true;
+  } catch (error) {
+    if (['EPERM', 'EACCES', 'ENOSYS', 'ENOTSUP'].includes((error as NodeJS.ErrnoException).code ?? '')) return false;
+    throw error;
+  }
+}
+
+describe('runtime sync path containment', () => {
+  it.for(['manifest', 'override'] as const)('rejects external parents via %s before creating files or directories', async (source, context) => {
+    const outside = project();
+    const dir = project();
+    if (!directoryLink(outside, join(dir, 'linked'))) {
+      context.skip();
+      return;
+    }
+    for (const runtimeFile of ['linked/runtime.mjs', 'linked/missing/deeper/runtime.mjs']) {
+      const argv = source === 'override' ? ['sync', '--path', runtimeFile] : ['sync'];
+      if (source === 'manifest') {
+        writeFileSync(join(dir, 'augur.contracts.json'), JSON.stringify({ version: 1, contracts: [], runtimeFile }), 'utf8');
+      }
+      await expect(run(dir, argv)).rejects.toThrow(new Error('contract path leaves project: ' + runtimeFile));
+      expect(existsSync(join(outside, 'runtime.mjs'))).toBe(false);
+      expect(existsSync(join(outside, 'missing'))).toBe(false);
+    }
+  });
+
+  it('preserves rejection of an existing external copy', async (context) => {
+    const dir = project({ runtimeFile: 'linked/runtime.mjs' });
+    const outside = project();
+    const copy = join(outside, 'runtime.mjs');
+    writeFileSync(copy, 'untouched', 'utf8');
+    if (!directoryLink(outside, join(dir, 'linked'))) {
+      context.skip();
+      return;
+    }
+    await expect(run(dir, ['sync'])).rejects.toThrow(new Error('contract path leaves project: linked/runtime.mjs'));
+    expect(readFileSync(copy, 'utf8')).toBe('untouched');
+  });
+
+  it('creates ordinary missing parent directories recursively', async () => {
+    const dir = project({ runtimeFile: 'new/deeper/runtime.mjs' });
+    expect(await run(dir, ['sync'])).toMatchObject({ exit: 0 });
+    expect(readFileSync(join(dir, 'new/deeper/runtime.mjs'), 'utf8')).toContain('augur-contract-runtime');
+    expect(await run(dir, ['check'])).toMatchObject({ exit: 0 });
+  });
+
+  it('allows missing directories under a link that stays inside the project', async (context) => {
+    const dir = project({ runtimeFile: 'linked/new/runtime.mjs' });
+    if (!directoryLink(join(dir, 'src'), join(dir, 'linked'))) {
+      context.skip();
+      return;
+    }
+    expect(await run(dir, ['sync'])).toMatchObject({ exit: 0 });
+    expect(readFileSync(join(dir, 'src/new/runtime.mjs'), 'utf8')).toContain('augur-contract-runtime');
+    expect(await run(dir, ['check'])).toMatchObject({ exit: 0 });
   });
 });

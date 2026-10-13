@@ -6,6 +6,9 @@
 // older template are told apart without diffing against Augur's history.
 
 import { createHash } from 'node:crypto';
+import { contract } from '../../templates/contract-runtime/contract-runtime.ts'; /* augur-inject:import:e704b9a6 */
+import augurContract_9429689d from '../../contracts/runtime-template.contract.ts'; /* augur-inject:contract-predicate:7604962c */
+import augurContract_3b738b4c from '../../contracts/runtime-render.contract.ts'; /* augur-inject:contract-predicate:eedcda04 */
 
 /** Bumped when the template's observable rules change (rotation, record shape). */
 export const CONTRACT_RUNTIME_TEMPLATE_VERSION = 2;
@@ -43,6 +46,8 @@ export function renderContractRuntime(template: string): string {
   const content = body(template);
   return `${HEADER_PREFIX} version=${CONTRACT_RUNTIME_TEMPLATE_VERSION} sha256=${runtimeBodyHash(content)}\n${NOTICE}${content}`;
 }
+// @ts-expect-error augur-inject
+renderContractRuntime = contract(renderContractRuntime, { ...augurContract_3b738b4c, contractId: 'C-RT-2', mode: 'observe', sample: 1, where: 'src/contracts/runtime-template.ts:42', rule: 'contract-wrap', id: '3b738b4c' }); /* augur-inject:contract-wrap:3b738b4c */
 
 /**
  * `existing` undefined means the file is absent.
@@ -71,3 +76,5 @@ export function inspectContractRuntime(existing: string | undefined, template: s
   }
   return { state: 'current', version, sha256: recorded };
 }
+// @ts-expect-error augur-inject
+inspectContractRuntime = contract(inspectContractRuntime, { ...augurContract_9429689d, contractId: 'C-RT-1', mode: 'observe', sample: 1, where: 'src/contracts/runtime-template.ts:51', rule: 'contract-wrap', id: '9429689d' }); /* augur-inject:contract-wrap:9429689d */
