@@ -43,6 +43,12 @@ export const contractsManifestSchema = z
     version: z.literal(1),
     contractsDir: repoPathSchema.default('contracts'),
     importFrom: z.string().min(1).default('@ludiars/log-weaver'),
+    /**
+     * Repository-relative path of the generated runtime copy that `importFrom`
+     * resolves to. `augur contracts runtime sync|check` write and verify it;
+     * absent when the project imports a runtime package instead.
+     */
+    runtimeFile: repoPathSchema.optional(),
     contracts: z.array(contractEntrySchema).default([]),
   })
   .strict()

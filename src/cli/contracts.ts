@@ -19,9 +19,11 @@ import {
 } from '../contracts/project.ts';
 import { formatContractsMarkdown, formatContractsText } from '../contracts/report-format.ts';
 import { flagValue, hasFlag, parseArgv, rejectUnknownFlags, UsageError, type ParsedArgs } from './args.ts';
+import { runContractsRuntimeCommand } from './contracts-runtime.ts';
 import type { CliIo } from './main.ts';
 
 export async function runContractsCommand(argv: readonly string[], io: CliIo): Promise<number> {
+  if (argv[0] === 'runtime') return runContractsRuntimeCommand(argv.slice(1), io);
   const args = parseArgv(argv);
   if (args.command === 'lint') return runLint(args, io);
   if (args.command === 'report') return await runReport(args, io);

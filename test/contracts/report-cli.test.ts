@@ -106,6 +106,28 @@ describe('augur contracts report', () => {
     expect(parsed.diagnostics.foreign).toBe(1);
   });
 
+  it('reads only the active log: rotated archives and contracts outside the ledger are not evidence', async () => {
+    const dir = await makeProject();
+    const marker = await markerIdOf(dir);
+    // What the runtime template's daily rotation leaves behind (SPEC-CONTRACT-RUNTIME-TEMPLATE).
+    mkdirSync(join(dir, 'logs', 'archive'), { recursive: true });
+    writeFileSync(join(dir, 'logs', 'archive', 'contracts-2026-09-04.jsonl'), `${JSON.stringify(
+      { msg: 'contract violated', ctx: { contract: 'C-1', id: marker, phase: 'post', reason: 'old', observed_at: '2026-09-05T00:00:01.000Z' } },
+    )}\n`, 'utf8');
+    writeLog(dir, [
+      { msg: 'contract observed', ctx: { contract: 'C-1', id: marker, phase: 'ok', observed_at: '2026-09-05T00:00:02.000Z' } },
+      { msg: 'contract violated', ctx: { contract: 'C-9', id: marker, phase: 'post', reason: 'retired', observed_at: '2026-09-05T00:00:03.000Z' } },
+    ]);
+    const result = await report(dir, ['--since', '2026-09-05T00:00:00.000Z', '--json']);
+    const parsed = JSON.parse(result.stdout) as {
+      contracts: Array<{ id: string; state: string; calls: number; violationTotal: number }>;
+      diagnostics: { events: number; matched: number };
+    };
+    expect(parsed.contracts).toHaveLength(1);
+    expect(parsed.contracts[0]).toMatchObject({ id: 'C-1', state: 'covered', calls: 1, violationTotal: 0 });
+    expect(parsed.diagnostics).toMatchObject({ events: 2, matched: 1 });
+  });
+
   it('prints one line per contract for a human', async () => {
     const dir = await makeProject();
     const marker = await markerIdOf(dir);

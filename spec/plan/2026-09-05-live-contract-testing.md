@@ -331,6 +331,7 @@ Anatomia 未導入のリポでは `--diff-base` 無しで契約ファイルの�
 | `augur contracts lint --project <dir>` | `augur.contracts.json` と述語モジュールの整合検査 (id 重複、`file:symbol` 実在、default export の形) |
 | `augur contracts report --project <dir> [--logs <dir>] [--since <iso>\|--all] [--json\|--markdown]` | weaver JSONL を現行 marker id + 契約 id ごとに集計 |
 | `augur contracts report --acceptance --json --since <iso>` | Concordia の `acceptance_report` 形 `[{criterion, met, note}]` に整形 |
+| `augur contracts runtime <sync\|check> --project <dir> [--path <file>]` | Augur の雛形 `templates/contract-runtime/` から `runtimeFile` へ実行時ランタイムを書き出す / ずれを検出する (SPEC-CONTRACT-RUNTIME-TEMPLATE) |
 
 `--logs` の既定は log-weaver の解決規則と同じ (`VESTIGIUM_LOGS_DIR` → `<cwd>/logs`)。
 古い違反を次の委託の判定へ混ぜないため、単独の `report` は `--since` または診断用の

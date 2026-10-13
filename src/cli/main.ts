@@ -31,6 +31,7 @@ const USAGE = `Usage:
   augur inject <scan|apply|check|remove> Log injection (see spec/interface/inject-cli.md)
   augur contracts lint                   Check augur.contracts.json against the sources
   augur contracts report                 Aggregate weaver contract events (--since <iso> | --all)
+  augur contracts runtime <sync|check>   Write / verify the project's copy of Augur's contract runtime
   augur tests <verb>                     Manage registered tests
   augur serve                            Start the optional loopback HTTP API
   augur mcp                              Start the stdio MCP server

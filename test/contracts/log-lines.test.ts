@@ -34,6 +34,15 @@ describe('streamed contract log lines', () => {
     expect(await lines(join(dir, 'a.jsonl'))).toEqual([]);
   });
 
+  it('never descends into subfolders, so rotated archives stay out of the report', async () => {
+    const dir = fixture();
+    writeFileSync(join(dir, 'contracts.jsonl'), 'today\n', 'utf8');
+    mkdirSync(join(dir, 'archive'));
+    writeFileSync(join(dir, 'archive', 'contracts-2026-10-12.jsonl'), 'yesterday\n', 'utf8');
+    writeFileSync(join(dir, 'archive', '.contracts-2026-10-12.1.2.part'), 'claimed\n', 'utf8');
+    expect(await lines(dir)).toEqual(['today']);
+  });
+
   it('preserves multi-byte UTF-8 and CRLF split across 64 KiB byte boundaries', async () => {
     const dir = fixture();
     const first = 'a'.repeat(65535) + '猫🐈';

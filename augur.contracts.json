@@ -29,6 +29,24 @@
       "module": "contracts/acceptance.contract.ts",
       "mode": "observe",
       "sample": 1
+    },
+    {
+      "id": "C-RT-1",
+      "criterion": "C-RT-1 inspectContractRuntime(existing, template): 無いコピーは missing、ヘッダ無しは unmanaged、本文改変は modified、古い雛形は outdated、それ以外だけ current とする",
+      "symbol": "inspectContractRuntime",
+      "file": "src/contracts/runtime-template.ts",
+      "module": "contracts/runtime-template.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-RT-2",
+      "criterion": "C-RT-2 renderContractRuntime(template): 雛形の版と本文 SHA-256 のヘッダを先頭に付け、本文は雛形そのもの (改行は LF) にする",
+      "symbol": "renderContractRuntime",
+      "file": "src/contracts/runtime-template.ts",
+      "module": "contracts/runtime-render.contract.ts",
+      "mode": "observe",
+      "sample": 1
     }
   ]
 }
