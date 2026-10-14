@@ -23,6 +23,9 @@ src/
   server.ts         # kept (Phase 6 withdrawn): config load, pino logger, loopback serve — reached as `augur serve`
   app.ts            # Hono app assembly (/v1/plans, /v1/health, /v1/tests/*)
   config/           # augur.config.json loader (port, buses, repositories, runCache, authoring, dataDir)
+                    #   + local-repositories.ts: 対象リポを <dataDir>/repositories.json (git 管理外、
+                    #     AUGUR_REPOSITORIES_FILE で変更可) から足す。対象の名前をリポに書かずに使うため。
+                    #     augur.config.json と同名は拒否、ファイルが無ければ従来どおり。
   routes/           # HTTP boundary, zod -> 400 mapping
     tests.ts        #   /v1/tests/* (spec/interface/tests-api.md) — thin over operations/
   schema/           # Zod schemas mirroring spec/data/core-schema.md, one export per type

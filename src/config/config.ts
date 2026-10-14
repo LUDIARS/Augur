@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { busConfigSchema, type BusConfig } from '../tests/config.ts';
+import { loadLocalRepositories, localRepositoriesPath, mergeRepositories } from './local-repositories.ts';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
 
@@ -36,18 +37,20 @@ export function loadConfig(root = augurFolder()): AugurConfig {
   const raw: unknown = JSON.parse(readFileSync(join(folder, CONFIG_FILE), 'utf8'));
   const fileConfig = configFileSchema.parse(raw);
   const configuredDataDir = process.env.AUGUR_DATA_DIR || fileConfig.dataDir || '.augur-data';
+  const dataDir = isAbsolute(configuredDataDir) ? resolve(configuredDataDir) : resolve(folder, configuredDataDir);
+  const fromConfig = Object.fromEntries(Object.entries(fileConfig.repositories).map(([name, path]) => [
+    name,
+    isAbsolute(path) ? resolve(path) : resolve(folder, path),
+  ]));
   return {
     port: portFromEnv(fileConfig.port),
     logLevel: logLevelFromEnv(fileConfig.logLevel),
     buses: fileConfig.buses,
-    repositories: Object.fromEntries(Object.entries(fileConfig.repositories).map(([name, path]) => [
-      name,
-      isAbsolute(path) ? resolve(path) : resolve(folder, path),
-    ])),
+    repositories: mergeRepositories(fromConfig, loadLocalRepositories(localRepositoriesPath(dataDir))),
     runCache: fileConfig.runCache,
     authoring: fileConfig.authoring,
     augurFolder: folder,
-    dataDir: isAbsolute(configuredDataDir) ? resolve(configuredDataDir) : resolve(folder, configuredDataDir),
+    dataDir,
   };
 }
 
