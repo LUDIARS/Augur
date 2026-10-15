@@ -11,6 +11,7 @@
 import { marker, pointId } from './markers.ts';
 import { importAnchor } from './import-position.ts';
 import { CONTRACT_IMPORT_RULE, CONTRACT_RULE } from './contract-scan.ts';
+import { alignSpecifierExtension } from './import-extension.ts';
 import { parseSource } from './scan.ts';
 import { sourceString } from './source-literal.ts';
 import type { Candidate, TextEdit } from './types.ts';
@@ -64,8 +65,9 @@ export function computePredicateImportEdit(
     const binding = candidate.contract;
     if (binding === undefined) continue;
     const id = pointId(CONTRACT_IMPORT_RULE, relPath, binding.contractId, 0);
+    const specifier = alignSpecifierExtension(relPath, text, binding.specifier);
     lines.push(
-      `import ${binding.local} from ${sourceString(binding.specifier)}; ${marker(CONTRACT_IMPORT_RULE, id)}`,
+      `import ${binding.local} from ${sourceString(specifier)}; ${marker(CONTRACT_IMPORT_RULE, id)}`,
     );
   }
   if (lines.length === 0) return null;
