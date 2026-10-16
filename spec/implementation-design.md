@@ -9,7 +9,7 @@ This document defines how the specs translate into code: technology choices, mod
 | Runtime | Node.js (current LTS) | matches [Local Development Setup](./setup/local-development.md) |
 | Language | TypeScript, `strict` mode | schema-heavy domain; the type system carries the spec |
 | Schema validation | Zod schemas as the single source of truth; TS types inferred from them | one definition serves validation (HTTP 400s) and typing |
-| HTTP server | ~~Hono + @hono/node-server~~ — **removed in Phase 6** | superseded by [Daemon-less CLI](./plan/daemonless-cli.md); Augur has no daemon |
+| HTTP adapter | Hono + @hono/node-server, opt-in `augur serve` | CLI is canonical; daemon-optional revision in [Test Management](./plan/test-management.md) §1.2 retains a stateless HTTP shell |
 | Test runner | Vitest | per [Service Test Strategy](./test/service-test-strategy.md) |
 | Logging | ~~pino~~ → stderr writes from the CLI layer | the engine itself stays pure; a CLI has no log pipeline to feed |
 

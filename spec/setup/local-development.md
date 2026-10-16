@@ -19,6 +19,13 @@ Expected tooling:
 - Vitest
 - Hono + @hono/node-server (see the [Implementation Design](../implementation-design.md) for the full technology choices)
 
+`package.json` describes the package's Node compatibility range. The CLI shim
+uses built `dist/cli/main.js` when present; without that build it loads TypeScript
+source and requires a Node runtime with type-stripping support. The shim retries
+with `--experimental-strip-types` only for a type-loading failure. That flag does
+not make an older runtime support a feature it lacks. Build the CLI before using
+a runtime that cannot load the source; do not treat a load failure as an empty plan.
+
 ## Configuration
 
 Defaults live in `augur.config.json` (committed, non-secret): `port` (4210 — a copy of the Excubitor catalog entry, which is the source of truth), `logLevel`, buses, repository paths, run-cache retention, authoring model, and `dataDir`. The server binds to loopback only (tier: personal, see `spec/design.md`).
