@@ -9,7 +9,7 @@ A caller can say either of these:
 - Concrete: "the search endpoint must respond within 20ms."
 - Abstract: "search should feel instant" / "the UI should feel responsive."
 
-Both express the same underlying quality — responsiveness. Augur accepts both forms, resolves them into explicit numeric budgets, and produces guardrail test suggestions that external runners can enforce. Augur itself never measures anything.
+Both express the same underlying quality — responsiveness. Augur accepts both forms, resolves them into explicit numeric budgets, and produces guardrail test suggestions that external runners can enforce. The planning engine itself never measures anything; the one measurement Augur ships is the separate latency runner (`augur tests latency`, see [Default latency guardrail](#default-latency-guardrail-webapi)), which runs only when invoked and never inside planning.
 
 ## User Story
 
@@ -81,6 +81,34 @@ Exemptions come from two sources:
    - Proposed default → at most `medium` priority, confidence ≤ 0.6, and the rationale must state the budget is a proposal.
 8. The fix policy reacts to violations: `investigate_first` unless the caller supplied evidence locating the bottleneck, in which case a narrower strategy is allowed per the [Purpose-Driven Fix Policy](./purpose-driven-fix-policy.md).
 
+## Default latency guardrail (Web/API)
+
+Task: `actio:084b58a3-7391-41a4-85ca-0183b42526ce` (neco, 2026-10-17). Rule: **a Web/API response slower than one second is a defect.**
+
+Guardrails above exist only when a caller passes `experienceGoals`. Test planning (`augur tests plan`) therefore adds an always-on guardrail for every Web/API service:
+
+- **Web/API detection.** A repository is Web/API when Anatomia's entry-point graph has at least one `http-route` entry, **or** its Excubitor catalog fragment (`<repo>/excubitor.catalog.yaml`) declares a service with a `port`. Either fact is enough; both are recorded in `TestPlan.guardrailSources.reasons`.
+- **Default budget.** A Web/API service always gets the guardrail `EG-C01 / KR-C01a api_latency p95 <= 1000ms` (scope: every route), whether or not `experienceGoals` were supplied. It is the "one second keeps flow" bar, not the catalog's 100ms responsiveness proposal; a caller-supplied `responsiveness` goal still produces its own stricter guardrail beside it.
+- **Elegantia antipatterns.** Augur reads `GET /api/antipatterns` from Elegantia (base URL resolved from the Excubitor catalog service code `elegantia`; no hard-coded port). Each item with a non-null `augur` budget becomes a guardrail. Items with the same budget (metric, percentile, threshold, unit, scope; scope `"*"` = every route) share one guardrail, so AP01 and AP02 (both p95 <= 1000ms) attach to the default guardrail rather than duplicating it. Items with `augur: null` are review-only and produce no test.
+- **Linkage.** Each latency guardrail target carries `budget` and, when Elegantia items map to it, `elegantiaRefs` (e.g. `["AP01", "AP02"]`). Registration copies `elegantiaRefs` into the ledger, and test reports print them beside the test name.
+- **Mandatory.** Latency guardrails (`guardrail:latency:<budget key>`) bypass the per-domain quota. When the ledger already holds a non-retired guardrail tagged `latency:<budget key>`, the target is dropped as `covered` instead of being planned again.
+
+Invariants:
+
+- No silent fallback. If Elegantia cannot be resolved, reached, or parsed, the plan still contains the default guardrail, `guardrailSources.elegantia.status` is `unresolved` / `unreachable` / `invalid` with the reason, and a diagnostic line states that only the default guardrail was planned. Re-running the plan is the retry. A failure to read Anatomia entry points or the catalog fragment is recorded the same way.
+- Elegantia is queried only for Web/API services (`status: "not_queried"` otherwise).
+- A non-Web/API service gets no latency guardrail.
+
+### Latency runner (`augur tests latency`)
+
+The runner measures what the guardrail asserts:
+
+1. Resolves the service base URL from the repository's Excubitor catalog fragment (`http://127.0.0.1:<port>`; `--service <code>` when the fragment declares several services with ports). The service must already be running under Excubitor; the runner never starts anything.
+2. Takes Anatomia `http-route` entries and recovers each route's verb and path (Anatomia's reason text, else the handler's registration in its own file, else the Next.js file-route convention). A route whose shape cannot be recovered is skipped with that reason.
+3. Measures only argument-free `GET` routes (no `:param`, `*`, `{x}`, `[x]`). Non-GET routes and routes with arguments are skipped with the reason.
+4. Requests each route N times in sequence (default 20), timing to the full response body, and computes the nearest-rank p95. p95 above the threshold (default 1000ms) fails the route; equal passes.
+5. A route answering 401/403 is skipped as "requires authentication" (Augur holds no credentials). A 5xx or network error makes the route `error`, never a pass.
+
 ## Worked Example
 
 Input: objective `performance` ("the app should feel instant"), goal `responsiveness` with explicit target `api_latency p95 ≤ 20ms` (no scope, so it applies everywhere), a caller exemption `{ scope: "auth (login, registration)", reason: "users tolerate multi-second auth", relaxedTarget: ≤ 3s }`, and runtime signals reporting `/search` at p95 = 42ms and `/login` at p95 = 800ms.
@@ -95,7 +123,7 @@ With LLM assistance enabled and no caller exemption, Augur could propose the aut
 
 ## Constraints
 
-- Augur must not perform measurements; budgets are assertions for external runners such as CI performance jobs.
+- The planning engine must not perform measurements; budgets are assertions for external runners such as CI performance jobs. The latency runner is such a runner, invoked separately.
 - Augur must not present a proposed default as if the caller chose it. Proposals — default budgets and LLM-proposed exemptions alike — are always labeled.
 - An LLM-proposed exemption must never override a caller's explicit target or delete a guardrail outright; it can only downgrade priority and attach its reasoning.
 - Budget comparison requires matching units; Augur must not silently convert or guess units that do not match.

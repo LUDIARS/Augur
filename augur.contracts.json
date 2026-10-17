@@ -56,6 +56,42 @@
       "module": "contracts/runtime-write.contract.ts",
       "mode": "observe",
       "sample": 1
+    },
+    {
+      "id": "C-LG-1",
+      "criterion": "C-LG-1 latencyGuardrailCandidates(input): Web/API と判定されたサービスは experienceGoals が無くても EG-C01 api_latency p95 <= 1000ms の guardrail を必ず持ち、Web/API でないサービスには latency guardrail を出さない",
+      "symbol": "latencyGuardrailCandidates",
+      "file": "src/tests/latency/guardrails.ts",
+      "module": "contracts/latency-guardrail.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-LG-2",
+      "criterion": "C-LG-2 mergeLatencyBudgets(source): 既定予算の組は常にあり、augur 指定を持つ Elegantia 項目はちょうど 1 つの組の elegantiaRefs に載る。Elegantia 不達時は既定予算だけを返す",
+      "symbol": "mergeLatencyBudgets",
+      "file": "src/tests/latency/budgets.ts",
+      "module": "contracts/latency-budgets.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-LG-3",
+      "criterion": "C-LG-3 percentile(samples, p): nearest-rank で計算し、結果は観測値のどれかで、結果以下の観測が ceil(p/100*n) 件以上ある",
+      "symbol": "percentile",
+      "file": "src/tests/latency/measure.ts",
+      "module": "contracts/latency-percentile.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-LG-4",
+      "criterion": "C-LG-4 judgeProbe(samples, thresholdMs): p95 が閾値を超えたときだけ failed、閾値ちょうどは passed",
+      "symbol": "judgeProbe",
+      "file": "src/tests/latency/measure.ts",
+      "module": "contracts/latency-judge.contract.ts",
+      "mode": "observe",
+      "sample": 1
     }
   ]
 }

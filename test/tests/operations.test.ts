@@ -9,7 +9,7 @@ import { JsonlRunStore } from '../../src/tests/run-store.ts';
 import { testId } from '../../src/tests/registry.ts';
 import type { TestRecord } from '../../src/tests/types.ts';
 import { augurConfig, makeRepository, record, runRecord } from './fixtures.ts';
-import { analysis, program, stores } from './plan/fixtures.ts';
+import { analysis, offlineLatency, program, stores } from './plan/fixtures.ts';
 
 describe('operations adapter parity', () => {
   // fixture の記録は 2026-08-23 付け。put は実時刻で保持期限を掃除するため、時計を合わせる
@@ -91,7 +91,7 @@ describe('operations adapter parity', () => {
       config: augurConfig(root, repo),
       store: state.runStore,
       planStore: state.planStore,
-      planDependencies: { domains: async () => program(), callers: async () => [] },
+      planDependencies: { domains: async () => program(), callers: async () => [], ...offlineLatency },
     });
     const app = createApp(undefined, operations);
     const cliPlan = await cliJson(['plan', '--repo', repo, '--analysis', analysisPath, '--json'], operations);

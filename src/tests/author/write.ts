@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { loadRegistry, resolveRepositoryFile, saveRegistry, testId, upsertTest } from '../registry.ts';
+import { LATENCY_KEY_PREFIX, LATENCY_TAG_PREFIX } from '../latency/guardrails.ts';
 import type { TestPlan, TestRecord, TestTarget } from '../types.ts';
 
 export function writeAuthoredTarget(input: {
@@ -52,6 +53,9 @@ export function registerTarget(input: {
     domains: input.target.domains,
     anchors: input.target.anchors,
     ...(input.uxRefs === undefined || input.uxRefs.length === 0 ? {} : { uxRefs: input.uxRefs }),
+    ...(input.target.elegantiaRefs === undefined || input.target.elegantiaRefs.length === 0
+      ? {}
+      : { elegantiaRefs: input.target.elegantiaRefs }),
     origin: {
       type: input.plan.source.type,
       ref: input.plan.source.ref,
@@ -64,11 +68,17 @@ export function registerTarget(input: {
     createdAt: input.now,
     passStreak: 0,
     runs: 0,
+    ...(latencyTag(input.target) === undefined ? {} : { tags: [latencyTag(input.target)!] }),
     ...(input.note === undefined ? {} : { note: input.note }),
   };
   const saved = upsertTest(input.repoPath, record);
   if (input.target.replaces !== undefined) retireReplacement(input.repoPath, input.target.replaces, input.now);
   return saved;
+}
+
+/** Tag that lets planning recognize an already-registered latency guardrail for the same budget. */
+function latencyTag(target: TestTarget): string | undefined {
+  return target.key.startsWith(LATENCY_KEY_PREFIX) ? `${LATENCY_TAG_PREFIX}${target.key.slice(LATENCY_KEY_PREFIX.length)}` : undefined;
 }
 
 export function promotePassingCandidates(repoPath: string, passingIds: ReadonlySet<string>): TestRecord[] {

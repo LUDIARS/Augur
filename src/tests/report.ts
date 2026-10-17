@@ -39,7 +39,7 @@ export function formatReportText(report: Report): string {
     lines.push(domain);
     for (const result of results) {
       const test = report.tests[result.testId];
-      lines.push(`  ${symbol(result.status)} ${result.testId} ${test?.name ?? '(registry entry unavailable)'} (${result.durationMs}ms)`);
+      lines.push(`  ${symbol(result.status)} ${result.testId} ${test?.name ?? '(registry entry unavailable)'}${elegantiaSuffix(test)} (${result.durationMs}ms)`);
       if (result.failureMessage !== undefined) lines.push(`    ${result.failureMessage}`);
     }
     lines.push('');
@@ -78,7 +78,7 @@ export function formatReportMarkdown(report: Report): string {
     lines.push(`### ${domain}`, '');
     for (const result of results) {
       const test = report.tests[result.testId];
-      lines.push(`- ${symbol(result.status)} \`${result.testId}\` ${test?.name ?? '(registry entry unavailable)'} (${result.durationMs}ms)`);
+      lines.push(`- ${symbol(result.status)} \`${result.testId}\` ${test?.name ?? '(registry entry unavailable)'}${elegantiaSuffix(test)} (${result.durationMs}ms)`);
       if (result.failureMessage !== undefined) lines.push(`  - ${result.failureMessage.replaceAll('\n', ' ')}`);
     }
     lines.push('');
@@ -114,6 +114,11 @@ function groupResults(report: Report): Array<[string, RunRecord['results']]> {
     domain,
     [...results].sort((left, right) => rank[left.status] - rank[right.status] || left.testId.localeCompare(right.testId)),
   ]);
+}
+
+/** Elegantia antipattern ids the test enforces, so a failure reads as "AP01 occurred". */
+function elegantiaSuffix(test: TestRecord | undefined): string {
+  return test?.elegantiaRefs === undefined || test.elegantiaRefs.length === 0 ? '' : ` [${test.elegantiaRefs.join(', ')}]`;
 }
 
 function symbol(status: RunRecord['results'][number]['status']): string {

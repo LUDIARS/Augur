@@ -39,6 +39,7 @@ shell 不要、`--json` で機械可読、exit code は下表。
 | `sweep --repo <wt> [--now <iso>] [--apply]` | 退役判定。既定は提案表示、`--apply` で台帳更新 | ○ (`--apply`) |
 | `revive <testId> --repo <wt>` | `retired` → `active` | ○ |
 | `prune --repo <wt> [--apply]` | `retired` テストのファイル削除提案 / 実施 | ○ (`--apply`) |
+| `latency --repo <wt> [--service <code>] [--iterations N] [--threshold <ms>] [--timeout <ms>] [--json]` | 起動中サービスの引数なし GET route の p95 を実測 ([experience-driven-constraints](../feature/experience-driven-constraints.md#latency-runner-augur-tests-latency))。既定 N=20、閾値 1000ms、1 要求の timeout 10000ms | − |
 
 `--repo` 省略時は cwd。worktree を渡すのが通常 (Revisor / セッションとも)。
 
@@ -50,10 +51,26 @@ shell 不要、`--json` で機械可読、exit code は下表。
   `callers` / `domains program` は `--analyze` と同様に Augur が補完する
   (`--no-impact` で補完を止め、影響範囲 = 変更 anchor のみ)。
 
+### 既定 latency guardrail
+
+PR / experience 計画は、対象が Web/API サービス (Anatomia の `http-route` 入口がある、または
+`<repo>/excubitor.catalog.yaml` に `port` がある) なら `experienceGoals` が無くても
+`guardrail:latency:api_latency:p95:<=1000ms:*` を必ず計画する (quota 対象外)。
+Elegantia (`GET /api/antipatterns`、base URL は Excubitor catalog の `elegantia` から解決) の
+`augur` 指定も guardrail にし、target と台帳に `elegantiaRefs` を載せる。
+判定根拠と Elegantia の到達状態は `TestPlan.guardrailSources` に残り、text 出力でも
+`web/api:` / `elegantia:` 行と `! <diagnostic>` 行で示す。Elegantia 不達時は既定 guardrail
+だけで計画し、その旨を diagnostic に書く (黙って省かない)。
+
 ## 出力 (text)
 
 `run` の text 出力は既存 cli.md の Text Output Format に倣い、見出し → ドメイン別 →
 1 テスト 1 行 (`✔ / ✘ / – / !`、id、name、duration)。末尾に `run: <runId>`。
+`report` は台帳に `elegantiaRefs` があるテストの name の後ろに `[AP01, AP02]` を付ける。
+
+`latency` の text 出力は 1 route 1 行 (`✔ GET /v1/health (handler) p95 30ms max 41ms`)。
+skip / error は理由を ` — ` の後に書く (例 `requires authentication (HTTP 401)`、
+`POST route; only GET routes are measured`)。
 
 ## 契約観測の合流 (`report` / `flag`)
 
@@ -82,6 +99,10 @@ shell 不要、`--json` で機械可読、exit code は下表。
 | 2 | 内部エラー / 外部ツール不在 (Anatomia / claude CLI / バス起動失敗) |
 | 3 | バンドルが空 (走っていない)。`--for-revisor` では使わない (下記) |
 | 4 | `plan` が `blocked_by_domain` |
+
+`latency` の exit code は別表: 0 = 実測した全 route が予算内、1 = 予算超過の route がある
+(または使い方の誤り・catalog に対象サービスが無い)、2 = 実測できない route がある
+(5xx / 接続失敗 / Anatomia 不在)、3 = 実測できる route が 0 件。
 
 `run --head <sha>` は記録する SHA の上書きではなく、対象 worktree の実際の Git HEAD と
 一致することを確認する事前条件。不一致なら実行前に exit 1 とし、別の head を保証した形の

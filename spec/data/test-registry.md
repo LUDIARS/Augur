@@ -8,7 +8,7 @@ tags:
   - test-lifecycle
   - schema
   - persistence
-updated: 2026-08-23
+updated: 2026-10-17
 ---
 
 # テスト台帳・実行キャッシュ・バス設定 (データ)
@@ -53,6 +53,7 @@ interface TestRecord {
   };
   anchors: string[];             // このテストが守る Anatomia AnchorId (変更検知・バンドル選択に使う)
   uxRefs?: string[];             // Praeforma scenario / use case に対応する spec/UX 値 ID
+  elegantiaRefs?: string[];      // このテストが防ぐ Elegantia アンチパターン ID (例 "AP01")。計画の target から登録時に写す
   origin: {
     type: "pr" | "incident" | "experience" | "manual";
     ref: string;                 // PR 番号 / 問題ログ path / experience goal id / 空
@@ -69,7 +70,7 @@ interface TestRecord {
   runs: number;                  // 総実行数
   retiredAt?: string;
   retiredReason?: string;
-  tags?: string[];
+  tags?: string[];               // latency guardrail は "latency:<予算キー>" を持ち、再計画時の covered 判定に使う
   note?: string;
 }
 ```
@@ -85,7 +86,7 @@ entity id はモジュールの畳み方が変わるたびに変わる不透明�
 |---|---|---|
 | `regression` | 「直したものが再び壊れない」。失敗事例に 1:1 | incident / PR で修正した bug |
 | `assurance` | 「この機能はこう動く」。変更関数とその影響範囲の振る舞い | PR の変更 anchor + 到達範囲 |
-| `guardrail` | 予算・制約 (experience goal / 性能 / 内容レーティング)。既存 [experience-driven-constraints](../feature/experience-driven-constraints.md) の出口 | experience goal |
+| `guardrail` | 予算・制約 (experience goal / 性能 / 内容レーティング)。既存 [experience-driven-constraints](../feature/experience-driven-constraints.md) の出口 | experience goal / Web/API サービスの既定 latency guardrail (`api_latency p95 <= 1000ms`) / Elegantia の `augur` 指定 |
 
 `status` の遷移は [feature/test-lifecycle.md](../feature/test-lifecycle.md) §4。
 
@@ -277,6 +278,20 @@ interface TestPlan {
   targets: TestTarget[];
   dropped: Array<{ target: TestTarget; reason: "quota" | "covered" | "retired_equivalent" }>;
   quota: Record<string, { max: number; active: number; planned: number }>; // ビジネスドメイン別
+  guardrailSources?: GuardrailSources; // PR / experience 計画で付く。latency guardrail の根拠
+}
+
+/** 既定 latency guardrail の判定材料 (feature/experience-driven-constraints.md "Default latency guardrail")。 */
+interface GuardrailSources {
+  webApi: boolean;               // Anatomia http-route 入口 or Excubitor catalog の port があれば true
+  reasons: string[];             // 判定根拠 (例 "Anatomia http-route entries: 3")
+  diagnostics: string[];         // 集められなかった事実 (Anatomia entrypoints 失敗 / Elegantia 不達 等)。黙って省かない
+  elegantia: {
+    status: "ok" | "unresolved" | "unreachable" | "invalid" | "not_queried"; // not_queried = Web/API でない
+    detail?: string;
+    baseUrl?: string;
+    refs: string[];              // 計画に紐付いた Elegantia ID
+  };
 }
 
 interface TestTarget {
@@ -290,6 +305,8 @@ interface TestTarget {
   runner: TestRecord["runner"];
   brief: AuthoringBrief;
   replaces?: string;             // quota 入れ替えで退役させる既存 testId
+  budget?: ExperienceTarget;     // guardrail が守る予算 (latency guardrail は必ず持つ)
+  elegantiaRefs?: string[];      // 予算の由来になった Elegantia アンチパターン ID
 }
 
 interface AuthoringBrief {

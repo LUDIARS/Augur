@@ -1,4 +1,5 @@
 import type { TestOperations } from '../../operations/tests.ts';
+import type { TestPlan } from '../../tests/types.ts';
 import { flagValue, hasFlag, rejectUnknownFlags, UsageError } from '../args.ts';
 import { emitJsonOrText, repoPath, type TestCliContext } from './common.ts';
 
@@ -29,7 +30,21 @@ export async function planCommand(context: TestCliContext, operations: TestOpera
   emitJsonOrText(
     context,
     result,
-    `test plan ${result.planId}: ${result.status}\ntargets: ${result.targets.length}\ndropped: ${result.dropped.length}\n`,
+    `test plan ${result.planId}: ${result.status}\ntargets: ${result.targets.length}\ndropped: ${result.dropped.length}\n${guardrailSourceLines(result)}`,
   );
   return result.status === 'blocked_by_domain' ? 4 : 0;
+}
+
+function guardrailSourceLines(plan: TestPlan): string {
+  const sources = plan.guardrailSources;
+  if (sources === undefined) return '';
+  const elegantia = sources.elegantia.status === 'ok'
+    ? `ok (${sources.elegantia.refs.join(', ') || 'no augur items'})`
+    : `${sources.elegantia.status}${sources.elegantia.detail === undefined ? '' : ` — ${sources.elegantia.detail}`}`;
+  return [
+    `web/api: ${sources.webApi ? `yes (${sources.reasons.join('; ')})` : 'no'}`,
+    `elegantia: ${elegantia}`,
+    ...sources.diagnostics.map((diagnostic) => `! ${diagnostic}`),
+    '',
+  ].join('\n');
 }

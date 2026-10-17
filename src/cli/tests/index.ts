@@ -3,6 +3,7 @@ import { flagValue, parseArgv, UsageError } from '../args.ts';
 import type { CliIo } from '../main.ts';
 import { authorCommand } from './author.ts';
 import { flagCommand } from './flag.ts';
+import { latencyCommand } from './latency.ts';
 import { lintCommand } from './lint.ts';
 import { listCommand } from './list.ts';
 import { planCommand } from './plan.ts';
@@ -33,6 +34,7 @@ const COMMANDS = {
   sweep: sweepCommand,
   revive: reviveCommand,
   prune: pruneCommand,
+  latency: latencyCommand,
 } as const;
 
 export async function runTestsCommand(argv: readonly string[], io: CliIo, supplied?: TestOperations): Promise<number> {

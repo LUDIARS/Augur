@@ -33,6 +33,8 @@ export const testRecordSchema = z.object({
   }).strict(),
   anchors: z.array(z.string()),
   uxRefs: z.array(z.string().min(1)).optional(),
+  /** Elegantia antipattern ids (e.g. AP01) this test enforces. */
+  elegantiaRefs: z.array(z.string().min(1)).optional(),
   origin: z.object({
     type: originTypeSchema,
     ref: z.string(),
@@ -150,6 +152,14 @@ export const authoringBriefSchema = z.object({
   }).strict().optional(),
 }).strict();
 
+const budgetSchema = z.object({
+  metric: z.string().min(1),
+  threshold: z.number(),
+  unit: z.string().min(1),
+  percentile: z.number().optional(),
+  scope: z.string().optional(),
+}).strict();
+
 export const testTargetSchema = z.object({
   key: z.string().min(1),
   kind: testKindSchema,
@@ -165,6 +175,22 @@ export const testTargetSchema = z.object({
   runtime: z.boolean(),
   brief: authoringBriefSchema,
   replaces: z.string().optional(),
+  /** The budget a guardrail asserts (latency guardrails always carry one). */
+  budget: budgetSchema.optional(),
+  elegantiaRefs: z.array(z.string().min(1)).optional(),
+}).strict();
+
+export const guardrailSourcesSchema = z.object({
+  webApi: z.boolean(),
+  reasons: z.array(z.string()),
+  /** Facts that could not be gathered (Anatomia entrypoints, catalog); recorded, never silently skipped. */
+  diagnostics: z.array(z.string()),
+  elegantia: z.object({
+    status: z.enum(['ok', 'unresolved', 'unreachable', 'invalid', 'not_queried']),
+    detail: z.string().optional(),
+    baseUrl: z.string().optional(),
+    refs: z.array(z.string()),
+  }).strict(),
 }).strict();
 
 export const testPlanSchema = z.object({
@@ -188,6 +214,7 @@ export const testPlanSchema = z.object({
     active: z.number().int().nonnegative(),
     planned: z.number().int().nonnegative(),
   }).strict()),
+  guardrailSources: guardrailSourcesSchema.optional(),
 }).strict();
 
 export const registerFromPlanResultSchema = z.object({
@@ -219,6 +246,7 @@ export type RunRecord = z.infer<typeof runRecordSchema>;
 export type AuthoringBrief = z.infer<typeof authoringBriefSchema>;
 export type TestTarget = z.infer<typeof testTargetSchema>;
 export type TestPlan = z.infer<typeof testPlanSchema>;
+export type GuardrailSources = z.infer<typeof guardrailSourcesSchema>;
 export type RegisterFromPlanResult = z.infer<typeof registerFromPlanResultSchema>;
 export type AuthorResult = z.infer<typeof authorResultSchema>;
 

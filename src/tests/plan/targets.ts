@@ -1,3 +1,4 @@
+import type { ExperienceTarget } from '../../schema/index.ts';
 import type { PrDiffReview, ProgramDomainDiagnosis } from '../anatomia.ts';
 import type { TestsConfig } from '../config.ts';
 import type { TestKind, TestPriority, TestRecord } from '../types.ts';
@@ -29,6 +30,8 @@ export interface TargetCandidate {
     added: boolean;
   };
   incident?: { log: string; failure: string; expectedAfterFix: string };
+  budget?: ExperienceTarget;
+  elegantiaRefs?: string[];
   dropReason?: 'covered' | 'retired_equivalent';
 }
 

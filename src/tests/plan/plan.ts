@@ -16,6 +16,7 @@ import {
   type ProgramDomainDiagnosis,
 } from '../anatomia.ts';
 import { loadTestsConfig, type TestsConfig } from '../config.ts';
+import { planLatencyGuardrails, type LatencyPlanDependencies } from '../latency/plan-sources.ts';
 import { readGitMetadata } from '../git.ts';
 import { FilePlanStore, type PlanStore } from '../plan-store.ts';
 import { loadRegistry } from '../registry.ts';
@@ -70,7 +71,7 @@ export const testPlanInputSchema = z.object({
 
 export type TestPlanInput = z.infer<typeof testPlanInputSchema>;
 
-export interface TestPlanDependencies {
+export interface TestPlanDependencies extends LatencyPlanDependencies {
   planStore: PlanStore;
   runStore: RunStore;
   analyze: (repoPath: string, base?: string) => Promise<PrDiffReview>;
@@ -146,6 +147,18 @@ export async function plan(
   const bugEvidence = input.source.type === 'pr' ? `${input.source.title ?? ''}\n${input.source.body ?? ''}` : '';
   const candidates = derivePrTargets({ analysis, program, impacted, registry, config, bugFixEvidence: bugEvidence });
   candidates.push(...guardrailCandidates(input.source.request, analysis, program, config));
+  const latency = await planLatencyGuardrails({
+    repoPath,
+    analysis,
+    program,
+    registry,
+    fallback: candidates.filter((candidate) => candidate.kind === 'assurance'),
+  }, {
+    ...(dependencies.entrypoints === undefined ? {} : { entrypoints: dependencies.entrypoints }),
+    ...(dependencies.services === undefined ? {} : { services: dependencies.services }),
+    ...(dependencies.antipatterns === undefined ? {} : { antipatterns: dependencies.antipatterns }),
+  });
+  candidates.push(...latency.candidates);
   const materialized = candidates.map((candidate) => ({
     candidate,
     target: materializeTarget({ candidate, registry, config, program }),
@@ -166,6 +179,7 @@ export async function plan(
     targets,
     dropped: [...preDropped, ...quota.dropped].sort((left, right) => left.target.key.localeCompare(right.target.key)),
     quota: quota.quota,
+    guardrailSources: latency.sources,
   }, repoPath);
 }
 

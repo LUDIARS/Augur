@@ -30,6 +30,10 @@ export function materializeTarget(input: {
     runner: runnerFor(file, input.config),
     runtime: decision.runtime,
     brief: briefFor(input.candidate, input.registry),
+    ...(input.candidate.budget === undefined ? {} : { budget: input.candidate.budget }),
+    ...(input.candidate.elegantiaRefs === undefined || input.candidate.elegantiaRefs.length === 0
+      ? {}
+      : { elegantiaRefs: [...input.candidate.elegantiaRefs].sort() }),
   };
 }
 
@@ -84,15 +88,35 @@ export function briefFor(candidate: TargetCandidate, registry: readonly TestReco
     .slice(0, 2)
     .map((test) => ({ file: test.file, name: test.name }));
   return {
-    title: `${label}: ${candidate.subject.symbol}`,
+    title: candidate.budget === undefined
+      ? `${label}: ${candidate.subject.symbol}`
+      : `${label}: ${candidate.subject.symbol} ${budgetLabel(candidate.budget)}`,
     purpose: purposeFor(candidate),
     subject: candidate.subject,
     risks: [...candidate.risks].sort(),
     exemplars,
-    mustAssert: mustAssertFor(candidate.subject.signature, candidate.risks, candidate.kind),
+    mustAssert: [
+      ...mustAssertFor(candidate.subject.signature, candidate.risks, candidate.kind),
+      ...budgetAssertions(candidate),
+    ],
     mustNot: [...FIXED_MUST_NOT],
     ...(candidate.incident === undefined ? {} : { incident: candidate.incident }),
   };
+}
+
+function budgetLabel(budget: NonNullable<TargetCandidate['budget']>): string {
+  const percentile = budget.percentile === undefined ? '' : ` p${budget.percentile}`;
+  const scope = budget.scope === undefined ? '' : ` on ${budget.scope}`;
+  return `${budget.metric}${percentile} <= ${budget.threshold}${budget.unit}${scope}`;
+}
+
+function budgetAssertions(candidate: TargetCandidate): string[] {
+  if (candidate.budget === undefined) return [];
+  const assertions = [`${budgetLabel(candidate.budget)}, measured externally (api_latency: \`augur tests latency\`)`];
+  if (candidate.elegantiaRefs !== undefined && candidate.elegantiaRefs.length > 0) {
+    assertions.push(`the Elegantia antipatterns ${candidate.elegantiaRefs.join(', ')} do not occur`);
+  }
+  return assertions;
 }
 
 function purposeFor(candidate: TargetCandidate): string {

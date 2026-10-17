@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { createMcpServer } from '../../src/mcp/server.ts';
 import { createTestOperations } from '../../src/operations/tests.ts';
 import { augurConfig } from './fixtures.ts';
-import { analysis, program, repository, stores } from './plan/fixtures.ts';
+import { analysis, offlineLatency, program, repository, stores } from './plan/fixtures.ts';
 
 describe('MCP plan and author parity', () => {
   it('exposes plan, author, and register-from-plan and returns operation-identical JSON', async () => {
@@ -19,7 +19,7 @@ describe('MCP plan and author parity', () => {
       config: augurConfig(root, repo),
       store: state.runStore,
       planStore: state.planStore,
-      planDependencies: { domains: async () => program(), callers: async () => [] },
+      planDependencies: { domains: async () => program(), callers: async () => [], ...offlineLatency },
     });
     const server = createMcpServer(operations);
     const client = new Client({ name: 'test', version: '1' });

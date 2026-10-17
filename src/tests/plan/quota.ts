@@ -2,6 +2,10 @@ import { quotaForDomain, type TestsConfig } from '../config.ts';
 import type { TestPlan, TestRecord, TestTarget } from '../types.ts';
 import { PRIORITY_ORDER } from './priority.ts';
 
+// Default latency guardrails are mandatory for Web/API services
+// (spec/feature/experience-driven-constraints.md), so quota never drops them.
+const MANDATORY_KEY_PREFIX = 'guardrail:latency:';
+
 export interface QuotaResult {
   targets: TestTarget[];
   dropped: TestPlan['dropped'];
@@ -37,6 +41,10 @@ export function applyQuota(
 
   for (const target of ordered) {
     const domains = domainsOfTarget(target);
+    if (target.key.startsWith(MANDATORY_KEY_PREFIX)) {
+      accept(target, domains, used, planned, accepted);
+      continue;
+    }
     const overflowing = domains.filter((domain) => (used.get(domain) ?? 0) + 1 > quotaForDomain(config, domain));
     if (overflowing.length === 0) {
       accept(target, domains, used, planned, accepted);

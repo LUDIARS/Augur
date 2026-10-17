@@ -45,8 +45,16 @@ export function repository(path: string, records: readonly TestRecord[] = []): v
   writeFileSync(join(path, 'src', 'example.ts'), 'export function calculate(value: number) { return value + 1; }\n', 'utf8');
 }
 
+/** Latency-guardrail facts for a repository with no Web/API surface (no Anatomia spawn, no network). */
+export const offlineLatency = {
+  entrypoints: async () => ({ entries: [] }),
+  services: () => [],
+  antipatterns: async () => ({ status: 'unresolved' as const, detail: 'not queried in tests' }),
+};
+
 export function stores(root: string) {
   return {
+    ...offlineLatency,
     planStore: new FilePlanStore(join(root, 'data'), () => new Date('2026-08-23T00:00:00.000Z'), () => PLAN_ID),
     runStore: new JsonlRunStore(join(root, 'runs.jsonl'), { retentionDays: 30, maxRunsPerRepository: 20 }),
   };

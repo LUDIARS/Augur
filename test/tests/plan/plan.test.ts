@@ -6,7 +6,7 @@ import { runTestsCommand } from '../../../src/cli/tests/index.ts';
 import { createTestOperations } from '../../../src/operations/tests.ts';
 import { plan } from '../../../src/tests/plan/plan.ts';
 import { augurConfig, record } from '../fixtures.ts';
-import { analysis, program, repository, stores } from './fixtures.ts';
+import { analysis, offlineLatency, program, repository, stores } from './fixtures.ts';
 
 describe('deterministic test planning', () => {
   it('blocks with no targets when Anatomia reports unclassified changed anchors', async () => {
@@ -36,7 +36,7 @@ describe('deterministic test planning', () => {
     const state = stores(root);
     const operations = createTestOperations({
       config: augurConfig(root, repo), store: state.runStore, planStore: state.planStore,
-      planDependencies: { domains: async () => program(), callers: async () => [] },
+      planDependencies: { domains: async () => program(), callers: async () => [], ...offlineLatency },
     });
     let stdout = '';
     const exit = await runTestsCommand(['plan', '--repo', repo, '--analysis', analysisPath, '--json'], {

@@ -20,6 +20,7 @@ Other tools invoke Augur as `node <augurFolder>/bin/augur.mjs <subcommand>`, wit
 augur plan [options]           # this document
 augur review-plan --json       # ./review-plan-cli.md
 augur inject <...>             # ./inject-cli.md
+augur tests <verb>             # ./tests-cli.md (incl. `tests latency`, the latency runner)
 ```
 
 `augur inject` is the existing log-injection tool, reached as a subcommand rather than as a second entry point. Future subcommands (e.g. `augur goals` to list the catalog) may be added without breaking these.

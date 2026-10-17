@@ -87,7 +87,22 @@ const prDiffReviewSchema = z.object({
   }).passthrough(),
 }).passthrough();
 
+const entryPointGraphSchema = z.object({
+  entries: z.array(z.object({
+    id: z.string(),
+    classes: z.array(z.string()),
+    symbol: z.object({
+      anchor: z.string(),
+      name: z.string(),
+      path: z.string(),
+      line: z.number().int().nonnegative(),
+    }).passthrough(),
+    reasons: z.array(z.string()).optional(),
+  }).passthrough()),
+}).passthrough();
+
 export type AnatomiaSymbolHit = z.infer<typeof symbolHitSchema>;
+export type EntryPointGraph = z.infer<typeof entryPointGraphSchema>;
 export type ProgramDomainDiagnosis = z.infer<typeof programDiagnosisSchema>;
 export type PrDiffReview = z.infer<typeof prDiffReviewSchema>;
 
@@ -112,6 +127,10 @@ export async function prReview(repoPath: string, base?: string): Promise<PrDiffR
 
 export async function domainsProgram(repoPath: string): Promise<ProgramDomainDiagnosis> {
   return programDiagnosisSchema.parse(await runAnatomia(['domains', 'program', '--repo', resolve(repoPath), '--json']));
+}
+
+export async function entrypoints(repoPath: string): Promise<EntryPointGraph> {
+  return entryPointGraphSchema.parse(await runAnatomia(['entrypoints', '--repo', resolve(repoPath), '--json']));
 }
 
 /** Backward-compatible T1 name. */
