@@ -92,6 +92,15 @@
       "module": "contracts/latency-judge.contract.ts",
       "mode": "observe",
       "sample": 1
+    },
+    {
+      "id": "C-3",
+      "criterion": "C-3 verifyQsLock(candidate, baseline): qs の version・resolved・integrity だけが公開 registry の 6.16.2 と一致する変更を受理し、旧版・別パッケージ変更を拒否する",
+      "symbol": "verifyQsLock",
+      "file": "scripts/security/verify-qs-lock.ts",
+      "module": "contracts/qs-lock.contract.ts",
+      "mode": "observe",
+      "sample": 1
     }
   ]
 }
