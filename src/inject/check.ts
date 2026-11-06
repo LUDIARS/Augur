@@ -8,13 +8,14 @@
 // bookkeeping: orphaned only when they are the last augur marker left in the file.
 
 import { CONTRACT_IMPORT_RULE } from './contract-scan.ts';
+import { CONTRACT_END_RULE } from './cpp-contract-apply.ts';
 import type { InjectManifest } from './manifest.ts';
 import { findMarkers } from './markers.ts';
 import { scanSource } from './scan.ts';
 import type { InjectContext, InjectionPoint } from './types.ts';
 
 /** Markers that only support other fragments; they are never a point of their own. */
-const BOOKKEEPING_RULES = new Set<string>(['import', CONTRACT_IMPORT_RULE]);
+const BOOKKEEPING_RULES = new Set<string>(['import', CONTRACT_IMPORT_RULE, CONTRACT_END_RULE]);
 
 export function checkSource(
   relPath: string,

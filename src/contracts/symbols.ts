@@ -7,12 +7,16 @@
 // the `Class.method` form unreadable.
 
 import ts from 'typescript';
+import { isCppPath } from './cpp/parser.ts';
+import { resolveCppSymbol, type CppFunctionSite } from './cpp/symbols.ts';
 
 export type SymbolForm =
   | 'const-initializer'
   | 'function-declaration'
   | 'prototype-method'
-  | 'static-method';
+  | 'static-method'
+  /** A C++ definition whose body is wrapped in place (SPEC-CONTRACT-CPP-INJECT). */
+  | 'cpp-function';
 
 export type SymbolSite = {
   readonly form: SymbolForm;
@@ -26,6 +30,8 @@ export type SymbolSite = {
   readonly insertPos?: number;
   /** Runtime expression naming the function to wrap (`f`, `C.prototype.m`, `C.m`). */
   readonly target: string;
+  /** cpp-function: where the body wrap goes and what it forwards. */
+  readonly cpp?: CppFunctionSite;
 };
 
 export function parseContractSource(relPath: string, text: string): ts.SourceFile {
@@ -34,6 +40,11 @@ export function parseContractSource(relPath: string, text: string): ts.SourceFil
 }
 
 export function resolveSymbol(relPath: string, text: string, symbol: string): SymbolSite | null {
+  if (isCppPath(relPath)) {
+    const resolved = resolveCppSymbol(text, symbol);
+    if (resolved === null || 'unsupported' in resolved) return null;
+    return { form: 'cpp-function', line: resolved.line, indent: '', target: symbol, cpp: resolved };
+  }
   const sf = parseContractSource(relPath, text);
   const dot = symbol.indexOf('.');
   if (dot > 0) return resolveMethod(sf, text, symbol.slice(0, dot), symbol.slice(dot + 1));

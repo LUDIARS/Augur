@@ -3,6 +3,7 @@
 // parses with the TypeScript compiler API, so TS and ESM JS both work.
 
 import ts from 'typescript';
+import { isCppPath } from '../contracts/cpp/parser.ts';
 import { collectContractWrap } from './contract-scan.ts';
 import type { InjectManifest } from './manifest.ts';
 import { ruleEnabled } from './manifest.ts';
@@ -21,31 +22,36 @@ export function scanSource(
   manifest: InjectManifest,
   context?: InjectContext,
 ): Candidate[] {
-  const sf = parseSource(relPath, text);
   const markers = findMarkers(text);
   const collected: Omit<Candidate, 'id'>[] = [];
+  // C++ sources carry contract-wrap only: the log rules (entry-runtime,
+  // silent-catch, spawn-watch, guards) are JavaScript runtime fragments.
+  const sf = isCppPath(relPath) ? null : parseSource(relPath, text);
 
-  collectEntryRuntime(relPath, text, manifest, markers, collected);
+  if (sf !== null) collectEntryRuntime(relPath, text, manifest, markers, collected);
   // contract-wrap is named by the contract file, not discovered in the AST, so
   // it is collected outside the walk (spec/plan/2026-09-05-live-contract-testing.md §2.3).
   if (context?.contractTargets !== undefined && ruleEnabled(manifest, 'contract-wrap')) {
     collectContractWrap(relPath, text, context.contractTargets, markers, collected);
   }
 
-  const visit = (node: ts.Node): void => {
-    if (ts.isCatchClause(node) && ruleEnabled(manifest, 'silent-catch')) {
-      collectSilentCatch(node, sf, text, markers, collected);
-    }
-    if (ts.isVariableStatement(node) && ruleEnabled(manifest, 'spawn-watch')) {
-      collectSpawnWatch(node, sf, text, markers, collected);
-    }
-    if (ts.isCallExpression(node)) {
-      if (ruleEnabled(manifest, 'interval-guard')) collectIntervalGuard(node, sf, markers, collected);
-      if (ruleEnabled(manifest, 'listener-guard')) collectListenerGuard(node, sf, markers, collected);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sf);
+  if (sf !== null) {
+    const source = sf;
+    const visit = (node: ts.Node): void => {
+      if (ts.isCatchClause(node) && ruleEnabled(manifest, 'silent-catch')) {
+        collectSilentCatch(node, source, text, markers, collected);
+      }
+      if (ts.isVariableStatement(node) && ruleEnabled(manifest, 'spawn-watch')) {
+        collectSpawnWatch(node, source, text, markers, collected);
+      }
+      if (ts.isCallExpression(node)) {
+        if (ruleEnabled(manifest, 'interval-guard')) collectIntervalGuard(node, source, markers, collected);
+        if (ruleEnabled(manifest, 'listener-guard')) collectListenerGuard(node, source, markers, collected);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
 
   // Assign deterministic ids per (rule, ordinal-in-document-order); an
   // applied candidate keeps the id its marker already carries.

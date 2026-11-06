@@ -3,6 +3,7 @@
 // file named and reports whether it can be wrapped, is already wrapped, or is
 // out of reach (`unresolved` / `stale-module`).
 
+import { isHeaderPath } from '../contracts/cpp/parser.ts';
 import { resolveSymbol } from '../contracts/symbols.ts';
 import { normalizeRepoPath } from '../contracts/paths.ts';
 import { pointId } from './markers.ts';
@@ -45,6 +46,12 @@ export function collectContractWrap(
       continue;
     }
     const site = resolveSymbol(relPath, text, target.symbol);
+    // A C++ wrap includes the runtime by header path and passes the header's
+    // predicate set by name; without either the fragment could not compile.
+    if (site?.cpp !== undefined && (!isHeaderPath(target.importFrom) || target.predicateName === undefined)) {
+      out.push({ ...base, line: site.line, applied: false, problem: target.predicateName === undefined ? 'stale-module' : 'unresolved' });
+      continue;
+    }
     if (site === null) {
       out.push({ ...base, line: 1, applied: false, problem: 'unresolved' });
       continue;
@@ -63,13 +70,15 @@ export function collectContractWrap(
         ? { wrapStart: site.wrapStart, wrapEnd: site.wrapEnd }
         : {}),
       ...(site.insertPos !== undefined ? { insertPos: site.insertPos } : {}),
+      ...(site.cpp !== undefined ? { cpp: site.cpp } : {}),
       contract: {
         contractId: target.contractId,
         importFrom: target.importFrom,
         mode: target.mode,
         sample: target.sample,
         specifier: target.specifier,
-        local: predicateLocal(id),
+        module: target.module,
+        local: site.cpp !== undefined ? target.predicateName! : predicateLocal(id),
         form: site.form,
         target: site.target,
       },

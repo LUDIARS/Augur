@@ -10,6 +10,7 @@ import {
 } from './args.ts';
 import { formatPlanText } from './format.ts';
 import { runContractsCommand } from './contracts.ts';
+import { prepareCppParser } from '../contracts/cpp/parser.ts';
 import { messageOf, type GatherIo } from './gather.ts';
 import { buildRequest } from './plan.ts';
 import { reviewPlan } from './reviewPlan.ts';
@@ -80,6 +81,8 @@ export async function main(argv: readonly string[], io: CliIo): Promise<number> 
     if (args.command === 'review-plan') return runReviewPlan(args, io);
     // Awaited rather than returned: a bare `return promise` settles outside this
     // try, so a rejection would escape the exit-code mapping below.
+    // Contract resolution is synchronous; C++ contracts need the grammar loaded first.
+    if (args.command === 'inject' || args.command === 'contracts' || args.command === 'tests') await prepareCppParser();
     if (args.command === 'inject') return await runInject(argv.slice(1), io);
     if (args.command === 'contracts') return await runContractsCommand(argv.slice(1), io);
     if (args.command === 'tests') return await runTestsCommand(argv.slice(1), io);

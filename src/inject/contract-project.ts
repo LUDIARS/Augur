@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import type { ContractsManifest } from '../contracts/manifest.ts';
 import { normalizeRepoPath } from '../contracts/paths.ts';
-import { existingProjectPath, loadContractsManifest, predicateStateOf } from '../contracts/project.ts';
+import { existingProjectPath, loadContractsManifest, predicateNameOf, predicateStateOf } from '../contracts/project.ts';
 import { parsePrDiffReview, prReview } from '../tests/anatomia.ts';
 import { addedFunctionsOf, selectAddedContracts } from './contract-diff.ts';
 import { buildContractTargets, type ContractTarget } from './contract-targets.ts';
@@ -27,7 +27,12 @@ export async function loadContractTargets(
   const manifest = loadContractsManifest(projectDir);
   if (manifest === null) return [];
   const selected = await selectContractIds(projectDir, manifest, selection);
-  return buildContractTargets(manifest, (module) => predicateStateOf(projectDir, module), selected);
+  return buildContractTargets(
+    manifest,
+    (module) => predicateStateOf(projectDir, module),
+    selected,
+    (module) => predicateNameOf(projectDir, module),
+  );
 }
 
 /**

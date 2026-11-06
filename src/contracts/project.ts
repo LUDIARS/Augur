@@ -9,6 +9,8 @@ import type { ContractsManifest } from './manifest.ts';
 import { CONTRACTS_MANIFEST_NAME, parseContractsManifest } from './manifest.ts';
 import type { PredicateModuleState } from './predicate.ts';
 import { classifyPredicateSource } from './predicate.ts';
+import { classifyCppPredicate } from './cpp/predicate.ts';
+import { isCppPath } from './cpp/parser.ts';
 
 export { readWeaverLogLines } from './log-lines.ts';
 
@@ -27,6 +29,18 @@ export function predicateStateOf(projectDir: string, module: string): PredicateM
   const path = existingProjectPath(projectDir, module);
   if (path === null) return 'missing';
   return classifyPredicateSource(module, readFileSync(path, 'utf8'));
+}
+
+/**
+ * Qualified name of the predicate set a C++ predicate header declares, or
+ * undefined for a TypeScript module or a header without exactly one set.
+ */
+export function predicateNameOf(projectDir: string, module: string): string | undefined {
+  if (!isCppPath(module)) return undefined;
+  const path = existingProjectPath(projectDir, module);
+  if (path === null) return undefined;
+  const shape = classifyCppPredicate(readFileSync(path, 'utf8'));
+  return shape.state === 'ok' ? shape.name : undefined;
 }
 
 export function readSourceIfPresent(projectDir: string, file: string): string | undefined {

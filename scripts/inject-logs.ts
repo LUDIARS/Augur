@@ -9,6 +9,7 @@
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { prepareCppParser } from '../src/contracts/cpp/parser.ts';
 import { loadContractTargets } from '../src/inject/contract-project.ts';
 import { fleetSchema } from '../src/inject/manifest.ts';
 import { runOnProject, type ProjectRunResult } from '../src/inject/project.ts';
@@ -85,6 +86,9 @@ if (project !== undefined) {
 
 const results: ProjectRunResult[] = [];
 let failed = false;
+
+// C++ contracts resolve synchronously below; the grammar must be loaded first.
+await prepareCppParser();
 
 for (const dir of projectDirs) {
   try {

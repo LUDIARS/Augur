@@ -9,7 +9,9 @@
 
 import ts from 'typescript';
 import { CONTRACT_IMPORT_RULE, CONTRACT_RULE } from './contract-scan.ts';
+import { isCppPath } from '../contracts/cpp/parser.ts';
 import { removeContractWrap } from './contract-remove.ts';
+import { computeCppRemove } from './cpp-contract-remove.ts';
 import { findMarkers } from './markers.ts';
 import { parseSource } from './scan.ts';
 import { RUNTIME_SYMBOL_BY_RULE } from './runtime-symbols.ts';
@@ -19,6 +21,7 @@ import type { InjectRule, MarkerHit } from './types.ts';
 export type RemoveResult = { text: string; removed: number; changed: boolean };
 
 export function computeRemove(relPath: string, text: string, onlyRules?: readonly InjectRule[]): RemoveResult {
+  if (isCppPath(relPath)) return computeCppRemove(text, onlyRules);
   let current = text;
   let removed = 0;
   const selected = onlyRules === undefined ? undefined : new Set<string>(onlyRules);

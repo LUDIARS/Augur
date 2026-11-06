@@ -421,9 +421,44 @@ auto contract(Fn fn, ContractSpec spec, Pre pre = {}, Post post = {}) {
         if constexpr (std::is_same_v<Post, NoPredicate>) return Verdict{};
         else return post(static_cast<const std::remove_reference_t<Result>&>(result), args...);
       });
-      return static_cast<Result>(result);
+      // `return result;` with decltype(auto) keeps a reference a reference and
+      // moves a by-value result, so move-only return types pass through.
+      return result;
     }
   };
+}
+
+/** The predicates a C++ predicate header declares (`inline const auto x = augur::predicates(pre, post);`). */
+template <class Pre, class Post>
+struct Predicates {
+  Pre pre;
+  Post post;
+};
+
+template <class Pre, class Post>
+Predicates<Pre, Post> predicates(Pre pre, Post post) {
+  return {std::move(pre), std::move(post)};
+}
+
+template <class Pre>
+Predicates<Pre, NoPredicate> pre_only(Pre pre) {
+  return {std::move(pre), {}};
+}
+
+template <class Post>
+Predicates<NoPredicate, Post> post_only(Post post) {
+  return {{}, std::move(post)};
+}
+
+/**
+ * The form `augur inject` writes into a C++ definition: the original body runs
+ * as `body`, the function's parameters are handed to the predicates as
+ * lvalues, and the result passes through unchanged.
+ * @implements SPEC-CONTRACT-CPP-INJECT
+ */
+template <class Pre, class Post, class Body, class... Args>
+decltype(auto) invoke_observed(const ContractSpec& spec, const Predicates<Pre, Post>& set, Body&& body, Args&... args) {
+  return contract([&body](Args&...) -> decltype(auto) { return body(); }, spec, set.pre, set.post)(args...);
 }
 
 }  // namespace augur

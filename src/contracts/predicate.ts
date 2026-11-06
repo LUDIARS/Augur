@@ -8,11 +8,15 @@
 // from the syntax alone.
 
 import ts from 'typescript';
+import { classifyCppPredicate } from './cpp/predicate.ts';
+import { isCppPath } from './cpp/parser.ts';
 import { parseContractSource } from './symbols.ts';
 
 export type PredicateModuleState = 'ok' | 'missing' | 'invalid-default';
 
 export function classifyPredicateSource(relPath: string, text: string): 'ok' | 'invalid-default' {
+  // A C++ predicate header declares one `augur::predicates(...)` set instead of a default export.
+  if (isCppPath(relPath)) return classifyCppPredicate(text).state;
   const sf = parseContractSource(relPath, text);
   for (const statement of sf.statements) {
     if (!ts.isExportAssignment(statement) || statement.isExportEquals === true) continue;

@@ -5,9 +5,11 @@
 import type { ContractsManifest } from './manifest.ts';
 import { normalizeRepoPath } from './paths.ts';
 import type { PredicateModuleState } from './predicate.ts';
+import { isCppPath, isHeaderPath } from './cpp/parser.ts';
+import { resolveCppSymbol } from './cpp/symbols.ts';
 import { resolveSymbol } from './symbols.ts';
 
-export type ContractLintCode = 'unresolved' | 'stale-module';
+export type ContractLintCode = 'unresolved' | 'stale-module' | 'runtime-include';
 
 export type ContractLintFinding = {
   readonly contractId: string;
@@ -30,6 +32,12 @@ export function lintContracts(manifest: ContractsManifest, lookup: ContractLintL
     const text = lookup.source(file);
     if (text === undefined) {
       findings.push(finding(entry.id, 'unresolved', file, entry.symbol, `file not found: ${file}`));
+    } else if (isCppPath(file)) {
+      lintCppSymbol(entry.id, file, text, entry.symbol, findings);
+      if (!isHeaderPath(manifest.importFrom)) {
+        findings.push(finding(entry.id, 'runtime-include', file, entry.symbol,
+          `importFrom must name the C++ runtime header (e.g. "augur/contract_runtime.hpp") for a C++ contract, not ${manifest.importFrom}`));
+      }
     } else if (resolveSymbol(file, text, entry.symbol) === null) {
       findings.push(finding(entry.id, 'unresolved', file, entry.symbol, `${file} declares no top-level ${entry.symbol}`));
     }
@@ -39,10 +47,22 @@ export function lintContracts(manifest: ContractsManifest, lookup: ContractLintL
     if (state === 'missing') {
       findings.push(finding(entry.id, 'stale-module', module, entry.symbol, `predicate module not found: ${module}`));
     } else if (state === 'invalid-default') {
-      findings.push(finding(entry.id, 'stale-module', module, entry.symbol, `${module} must export default an object literal`));
+      findings.push(finding(entry.id, 'stale-module', module, entry.symbol, isCppPath(module)
+        ? `${module} must declare exactly one "inline const auto <name> = augur::predicates(pre, post);" (or pre_only / post_only) at namespace scope`
+        : `${module} must export default an object literal`));
     }
   }
   return findings;
+}
+
+/** A C++ symbol either resolves to one wrappable definition or says why not. */
+function lintCppSymbol(id: string, file: string, text: string, symbol: string, findings: ContractLintFinding[]): void {
+  const resolved = resolveCppSymbol(text, symbol);
+  if (resolved === null) {
+    findings.push(finding(id, 'unresolved', file, symbol, `${file} defines no single function ${symbol} (missing or overloaded)`));
+  } else if ('unsupported' in resolved) {
+    findings.push(finding(id, 'unresolved', file, symbol, `${symbol} cannot be wrapped: ${resolved.unsupported}`));
+  }
 }
 
 function finding(

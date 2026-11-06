@@ -4,7 +4,9 @@
 // byte-identical outside the inserted fragments.
 
 import ts from 'typescript';
+import { isCppPath } from '../contracts/cpp/parser.ts';
 import { computePredicateImportEdit, contractEdits } from './contract-apply.ts';
+import { cppContractEdits, cppIncludeEdit } from './cpp-contract-apply.ts';
 import { importAnchor } from './import-position.ts';
 import type { InjectManifest } from './manifest.ts';
 import { marker, pointId } from './markers.ts';
@@ -34,6 +36,13 @@ export function computeApply(
     (c) => !c.applied && c.problem === undefined && (onlyRules === undefined || onlyRules.includes(c.rule)),
   );
   if (pending.length === 0) return { text, injected: [], changed: false };
+  if (isCppPath(relPath)) {
+    // C++ carries contract-wrap only (scanSource never offers another rule there).
+    const edits = pending.flatMap(cppContractEdits);
+    const include = cppIncludeEdit(relPath, text, pending);
+    if (include !== null) edits.push(include);
+    return { text: splice(text, edits), injected: pending, changed: true };
+  }
 
   const edits: TextEdit[] = [];
   const where = (c: Candidate): string => (

@@ -5,6 +5,7 @@
 // data out — so rules are unit-testable on string fixtures.
 
 import type { ContractMode } from '../contracts/manifest.ts';
+import type { CppFunctionSite } from '../contracts/cpp/symbols.ts';
 import type { SymbolForm } from '../contracts/symbols.ts';
 import type { ContractTarget } from './contract-targets.ts';
 
@@ -35,6 +36,8 @@ export type ContractBinding = {
   readonly sample: number;
   /** Predicate module specifier, relative to the file being edited. */
   readonly specifier: string;
+  /** Repository-relative path of the predicate module (C++ includes it by this path). */
+  readonly module?: string;
   /** Local name the predicate default import is bound to. */
   readonly local: string;
   readonly form: SymbolForm;
@@ -71,6 +74,8 @@ export type Candidate = {
   contract?: ContractBinding;
   /** contract-wrap: why the named function cannot be wrapped right now. */
   problem?: ContractProblem;
+  /** contract-wrap on C++: the definition's body range, return type and parameters. */
+  cpp?: CppFunctionSite;
 };
 
 /** A marker comment found in source text. */

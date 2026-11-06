@@ -22,12 +22,15 @@ export type ContractTarget = {
   readonly mode: ContractMode;
   readonly sample: number;
   readonly moduleState: PredicateModuleState;
+  /** C++ only: qualified name of the header's `augur::predicates(...)` set. */
+  readonly predicateName?: string | undefined;
 };
 
 export function buildContractTargets(
   manifest: ContractsManifest,
   predicateState: (module: string) => PredicateModuleState,
   selected?: ReadonlySet<string>,
+  predicateName: (module: string) => string | undefined = () => undefined,
 ): ContractTarget[] {
   const targets: ContractTarget[] = [];
   for (const entry of manifest.contracts) {
@@ -45,6 +48,7 @@ export function buildContractTargets(
       mode: entry.mode,
       sample: entry.sample,
       moduleState: predicateState(module),
+      predicateName: predicateName(module),
     });
   }
   return targets;
