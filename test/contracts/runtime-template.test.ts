@@ -44,4 +44,16 @@ describe('contract runtime template distribution', () => {
       expect(text).toContain('AUGUR_CONTRACT_LOG_RETENTION_DAYS');
     }
   });
+
+  it('maps C++ headers to the C++ template, which keeps the same knobs and record names', () => {
+    for (const path of ['include/contract_runtime.hpp', 'a.hh', 'a.hxx', 'a.h']) expect(runtimeFlavorOf(path)).toBe('hpp');
+    expect(runtimeFlavorOf('src/contract_runtime.cpp')).toBeNull();
+    const text = readContractRuntimeTemplate('hpp');
+    for (const needle of ['auto contract(', 'AUGUR_CONTRACT_LOG_RETENTION_DAYS', 'VESTIGIUM_LOGS_DIR', 'contracts.jsonl',
+      'contract observed', 'contract violated', 'contract predicate threw', '#pragma once']) {
+      expect(text).toContain(needle);
+    }
+    // The generated header line is a C++ comment too, so a synced copy still compiles.
+    expect(renderContractRuntime(text).startsWith('// augur-contract-runtime')).toBe(true);
+  });
 });

@@ -37,7 +37,7 @@ function resolveTarget(args: ParsedArgs, io: CliIo): RuntimeTarget {
   if (!isRepoRelativePath(given)) throw new UsageError(`--path must be repository-relative: ${given}`);
   const runtimeFile = normalizeRepoPath(given);
   const flavor = runtimeFlavorOf(runtimeFile);
-  if (flavor === null) throw new UsageError(`runtime file must end in .ts, .mts, .mjs or .js: ${runtimeFile}`);
+  if (flavor === null) throw new UsageError(`runtime file must end in .ts, .mts, .mjs, .js, .hpp, .hh, .hxx or .h: ${runtimeFile}`);
   return { projectDir, runtimeFile, template: readContractRuntimeTemplate(flavor) };
 }
 

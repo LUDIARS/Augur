@@ -16,6 +16,7 @@ const TEMPLATE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..'
 const TEMPLATE_FILE: Record<RuntimeFlavor, string> = {
   ts: 'contract-runtime.ts',
   mjs: 'contract-runtime.mjs',
+  hpp: 'contract-runtime.hpp',
 };
 
 export function contractRuntimeTemplatePath(flavor: RuntimeFlavor): string {

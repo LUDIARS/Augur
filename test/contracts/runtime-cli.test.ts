@@ -48,6 +48,15 @@ describe('augur contracts runtime', () => {
     expect((await run(dir, ['check', '--path', 'src/contract-runtime.mjs'])).exit).toBe(0);
   });
 
+  it('writes the C++ template for a header path and checks it like the others', async () => {
+    const dir = project();
+    await run(dir, ['sync', '--path', 'include/augur/contract_runtime.hpp']);
+    const copy = readFileSync(join(dir, 'include', 'augur', 'contract_runtime.hpp'), 'utf8');
+    expect(copy).toContain('namespace augur');
+    expect(copy).not.toContain('export function');
+    expect((await run(dir, ['check', '--path', 'include/augur/contract_runtime.hpp'])).exit).toBe(0);
+  });
+
   it('flags a hand-edited copy and replaces it on sync', async () => {
     const dir = project({ runtimeFile: 'src/contract-runtime.mjs' });
     await run(dir, ['sync']);

@@ -428,6 +428,9 @@ C1 と C2 は並行可。C4 / C5 は小さいので 1 委託にまとめても�
 - 静的検証をしない。契約は実行時にしか評価されず、型検査や証明の代わりではない。
 - TS / ESM 以外 (Rust / C++ / C# / Unity) の関数は v1 対象外。Pictor や Ludellus-Native は
   別の注入手段が要る (ログ形式は同じ `WeaverEvent` に寄せる)。
+  C++ の実行時ランタイムは `templates/contract-runtime/contract-runtime.hpp` として用意済み
+  (2026-11-06、同じ JSONL / ローテーション。SPEC-CONTRACT-RUNTIME-TEMPLATE「C++ flavor」)。
+  C++ ソースへの自動注入と `contracts lint` の C++ シンボル解決は未実装で、手で `augur::contract` を書いて使う。
 - 契約から入力を生成するプロパティテストはしない (それは `augur tests author` の仕事)。
 - `enforce` を本番で使わない。
 
