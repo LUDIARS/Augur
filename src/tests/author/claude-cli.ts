@@ -1,6 +1,9 @@
 import { spawn } from 'node:child_process';
+import { resolveModel } from '@ludiars/one-shot';
 import { z } from 'zod';
 import type { AuthoringBrief, RunnerId } from '../types.ts';
+import { contract } from '../../../templates/contract-runtime/contract-runtime.ts'; /* augur-inject:import:e2420c70 */
+import augurContract_799d6a84 from '../../../contracts/claude-model.contract.ts'; /* augur-inject:contract-predicate:2e4cbc07 */
 
 export class ClaudeCliUnavailableError extends Error {
   readonly exitCode = 2;
@@ -47,7 +50,7 @@ export async function generateWithClaude(
 ): Promise<string> {
   const output = await invokeClaude(
     options.command ?? 'claude',
-    [...(options.prefixArgs ?? []), '-p', '--model', input.model, '--output-format', 'json'],
+    claudeArgs(input.model, options.prefixArgs ?? []),
     promptFor(input),
     options.timeoutMs ?? 120_000,
   );
@@ -67,6 +70,12 @@ export async function generateWithClaude(
   validateBody(body, input);
   return body;
 }
+
+export function claudeArgs(model: string, prefixArgs: readonly string[]): string[] {
+  return [...prefixArgs, '-p', '--model', resolveModel(model, 'claude'), '--output-format', 'json'];
+}
+// @ts-expect-error augur-inject
+claudeArgs = contract(claudeArgs, { ...augurContract_799d6a84, contractId: 'C-4', mode: 'observe', sample: 1, where: 'src/tests/author/claude-cli.ts:71', rule: 'contract-wrap', id: '799d6a84' }); /* augur-inject:contract-wrap:799d6a84 */
 
 export function validateBody(body: string, input: Pick<ClaudeTargetInput, 'file' | 'runner' | 'brief' | 'existingFile'>): void {
   if (body.trim() === '') throw new ClaudeCliGenerationError('Claude returned an empty test body');

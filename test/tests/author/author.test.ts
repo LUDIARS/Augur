@@ -1,9 +1,10 @@
-import { mkdtempSync, readFileSync, readdirSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { author } from '../../../src/tests/author/author.ts';
-import { validateBody } from '../../../src/tests/author/claude-cli.ts';
+import { generateWithClaude, validateBody } from '../../../src/tests/author/claude-cli.ts';
+import { loadConfig } from '../../../src/config/config.ts';
 import { FilePlanStore } from '../../../src/tests/plan-store.ts';
 import { loadRegistry, testId } from '../../../src/tests/registry.ts';
 import type { RunInput, TestPlan, TestTarget } from '../../../src/tests/types.ts';
@@ -53,6 +54,31 @@ function savePlan(root: string, repo: string): { store: FilePlanStore; plan: Tes
 }
 
 describe.sequential('test authoring', () => {
+  it('passes the role-map model to Claude and preserves an explicit model ID', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'augur-author-model-'));
+    try {
+      const roleMap = join(root, 'model-roles.json');
+      const mappedModel = 'claude-sonnet-test';
+      const explicitModel = 'claude-opus-explicit';
+      writeFileSync(roleMap, JSON.stringify({ schemaVersion: 1, roles: { claude: { sonnet: mappedModel } } }), 'utf8');
+      vi.stubEnv('LUDIARS_MODEL_ROLES_FILE', roleMap);
+      vi.stubEnv('LUDIARS_ONESHOT_MODEL_SONNET', undefined);
+
+      const model = loadConfig().authoring.model;
+      expect(model).toBe('sonnet');
+      if (model === undefined) throw new Error('authoring.model is required');
+      const { file, runner, brief } = target();
+      const options = { command: process.execPath, prefixArgs: [stub] };
+      const input = { file, runner, brief, sourceExcerpt: '', existingFile: false };
+      for (const [configured, expected] of [[model, mappedModel], [explicitModel, explicitModel]] as const) {
+        vi.stubEnv('AUGUR_CLAUDE_STUB_EXPECTED_MODEL', expected);
+        await expect(generateWithClaude({ ...input, model: configured }, options)).resolves.toContain(brief.title);
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('session author returns briefs and writes nothing', async () => {
     const root = mkdtempSync(join(tmpdir(), 'augur-author-session-'));
     const repo = join(root, 'repo');

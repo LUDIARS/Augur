@@ -13,6 +13,6 @@
   },
   "dataDir": ".augur-data",
   "authoring": {
-    "model": "claude-sonnet-4-5"
+    "model": "sonnet"
   }
 }

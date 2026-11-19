@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "node --watch --experimental-strip-types bin/augur.mjs serve",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.0",
+    "@ludiars/one-shot": "file:lib/lapilli/packages/one-shot",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "hono": "^4.12.0",
     "pino": "^9.14.0",

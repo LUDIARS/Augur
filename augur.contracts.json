@@ -4,6 +4,15 @@
   "importFrom": "../../templates/contract-runtime/contract-runtime.ts",
   "contracts": [
     {
+      "id": "C-4",
+      "criterion": "C-4 claudeArgs(model, prefixArgs): Claude の役割名を Lapilli で解決し、明示 ID と起動用の先頭引数を保持する",
+      "symbol": "claudeArgs",
+      "file": "src/tests/author/claude-cli.ts",
+      "module": "contracts/claude-model.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C-1",
       "criterion": "C-1 createReport(run, records): evidence を持つ run は登録件数と未解決 uxRef を報告へ保持し、証拠の無い run に evidence 節を作らない",
       "symbol": "createReport",

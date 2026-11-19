@@ -19,6 +19,9 @@ Expected tooling:
 - Vitest
 - Hono + @hono/node-server (see the [Implementation Design](../implementation-design.md) for the full technology choices)
 
+Initialize the pinned Lapilli submodule with `git submodule update --init -- lib/lapilli`
+before installing dependencies with `npm ci`. Lapilli's one-shot package requires Node 22.12 or newer.
+
 `package.json` describes the package's Node compatibility range. The CLI shim
 uses built `dist/cli/main.js` when present; without that build it loads TypeScript
 source and requires a Node runtime with type-stripping support. The shim retries

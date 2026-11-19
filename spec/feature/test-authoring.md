@@ -156,11 +156,14 @@ CI 時間はバンドル選択 (影響集合) が抑える。
 
 ### 5.2 生成器 `claude-cli`
 
-`claude -p --model <augur.config.json の authoring.model> --output-format json` を spawn し、
+`claude -p --model <解決済みモデル> --output-format json` を spawn し、
 brief + 対象関数のソース抜粋 + exemplar テスト 1 本を渡して**テストファイル 1 本分の本文**
 だけを返させる。
 
-- モデルは設定で固定する (既定任せにしない。上限切れの巻き添えで即 exit するため)。
+- `augur.config.json` の `authoring.model` には役割名または明示的な Claude モデル ID を指定する。
+  同梱設定の役割は `sonnet`。起動直前に Lapilli の `resolveModel` が Concordia の role map から
+  役割を解決し、明示 ID はそのまま渡す。
+  実装タスク参照 `actio:ebe781a3-a242-4b36-896e-ddcf1dcef4ec`。
 - 1 target 1 呼び出し。タイムアウト 120 秒。失敗した target は `dropped: author_failed`
   として残し、他の target は続ける。
 - 返った本文は書き込む前に検査する: 指定 `file` 以外への言及禁止、`mustNot` の語

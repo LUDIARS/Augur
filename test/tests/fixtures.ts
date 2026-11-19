@@ -75,7 +75,7 @@ export function augurConfig(root: string, repositoryPath: string): AugurConfig {
     buses: { local: { type: 'local', env: [] } },
     repositories: { 'Example/Repo': repositoryPath },
     runCache: { retentionDays: 30, maxRunsPerRepository: 200 },
-    authoring: { model: 'test-model' },
+    authoring: { model: 'claude-test-model' },
     augurFolder: root,
     dataDir: join(root, 'data'),
   };
