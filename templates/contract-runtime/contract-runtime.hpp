@@ -313,12 +313,22 @@ inline void rotate_if_stale(const std::filesystem::path& directory, const std::f
   confirmed[key] = today;
 }
 
+// UTF-8 の文字列からパスを作る。std::filesystem::u8path は C++20 で非推奨 (MSVC の STL4021 が
+// 警告をエラーにする構成でビルドを止める) なので、char8_t がある処理系では u8string から作る。
+inline std::filesystem::path utf8_path(const std::string& text) {
+#if defined(__cpp_char8_t)
+  return std::filesystem::path(std::u8string(text.begin(), text.end()));
+#else
+  return std::filesystem::u8path(text);
+#endif
+}
+
 inline void record(const std::string& message, const Context& context) {
   try {
     namespace fs = std::filesystem;
     const std::optional<std::string> configured = env("VESTIGIUM_LOGS_DIR");
     const fs::path directory =
-        configured && !configured->empty() ? fs::u8path(*configured) : fs::current_path() / "logs";
+        configured && !configured->empty() ? utf8_path(*configured) : fs::current_path() / "logs";
     std::lock_guard<std::mutex> lock(state().mutex);
     fs::create_directories(directory);
     const fs::path active = directory / kActiveFile;
@@ -401,6 +411,9 @@ template <class Fn, class Pre = NoPredicate, class Post = NoPredicate>
 auto contract(Fn fn, ContractSpec spec, Pre pre = {}, Post post = {}) {
   return [fn = std::move(fn), spec = std::move(spec), pre = std::move(pre), post = std::move(post)](
              auto&&... args) mutable -> decltype(auto) {
+    // Post が NoPredicate のとき post は破棄される if constexpr 側でしか使われず、
+    // clang の -Wunused-lambda-capture が -Werror でビルドを止めるので明示的に使う。
+    (void)post;
     const detail::Context context{{"contract", spec.contractId},
                                   {"id", spec.id},
                                   {"where", spec.where},

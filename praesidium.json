@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "native": [
+    {
+      "file": "test/contracts/cpp-runtime/driver.cpp",
+      "standard": "c++20",
+      "includes": [
+        "templates/contract-runtime"
+      ]
+    }
+  ]
+}
