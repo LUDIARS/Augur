@@ -128,7 +128,8 @@ function failure(verdict) {
 }
 
 export function contract(fn, spec) {
-  const { pre, post, contractId, id, where } = spec;
+  const { pre, post, contractId, id, where, sample } = spec;
+  const rate = typeof sample === "number" && sample > 0 && sample < 1 ? sample : 1;
   return function contracted(...args) {
     const context = { contract: contractId, id, where, observed_at: new Date().toISOString() };
     let preReason = null;
@@ -143,7 +144,9 @@ export function contract(fn, spec) {
       try {
         const postReason = failure(post?.(result, ...args));
         if (postReason) record("contract violated", { ...context, phase: "post", reason: postReason });
-        else if (!preReason) record("contract observed", { ...context, phase: "ok" });
+        else if (!preReason && (rate === 1 || Math.random() < rate)) {
+          record("contract observed", { ...context, phase: "ok" });
+        }
       } catch {
         record("contract predicate threw", { ...context, phase: "post", reason: "post predicate threw" });
       }

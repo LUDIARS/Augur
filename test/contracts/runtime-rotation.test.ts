@@ -52,12 +52,48 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
   vi.unstubAllEnvs();
   for (const dir of directories.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 describe.each(Object.keys(FLAVORS) as Flavor[])('contract runtime template (%s)', (file) => {
+  it('samples successful sync and async observations but always records predicate failures', async () => {
+    const dir = logsDir();
+    const contract = await loadRuntime(file);
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const spec = { ...SPEC, sample: 0.5 };
+    const post = vi.fn(() => true);
+    expect(contract(() => 2, { ...spec, post })()).toBe(2);
+    expect(post).toHaveBeenCalledWith(2);
+    expect(existsSync(join(dir, 'contracts.jsonl'))).toBe(false);
+
+    const throws = () => { throw new Error('predicate'); };
+    contract(() => 2, { ...spec, pre: () => 'pre failure', post: () => 'post failure' })();
+    contract(() => 2, { ...spec, pre: throws, post: throws })();
+    expect(random).toHaveBeenCalledTimes(1);
+
+    random.mockReturnValue(0.49);
+    await expect(contract(async () => 3, spec)()).resolves.toBe(3);
+    const events = linesOf(join(dir, 'contracts.jsonl'));
+    expect(events.map(({ msg, ctx }) => [msg, ctx.phase])).toEqual([
+      ['contract violated', 'pre'], ['contract violated', 'post'],
+      ['contract predicate threw', 'pre'], ['contract predicate threw', 'post'],
+      ['contract observed', 'ok'],
+    ]);
+  });
+
+  it('records all successful observations for the default, 1 and invalid sample rates', async () => {
+    const dir = logsDir();
+    const contract = await loadRuntime(file);
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const rates = [undefined, 1, 0, -0.1, 1.1, NaN, Infinity, '0.5', null];
+    for (const sample of rates) contract(() => 1, { ...SPEC, sample })();
+    expect(linesOf(join(dir, 'contracts.jsonl')).map(({ ctx }) => ctx.phase)).toEqual(rates.map(() => 'ok'));
+    expect(random).not.toHaveBeenCalled();
+  });
+
   it('records the verdict without changing results, exceptions or rejections', async () => {
     const dir = logsDir();
     const contract = await loadRuntime(file);

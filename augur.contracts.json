@@ -4,6 +4,15 @@
   "importFrom": "../../templates/contract-runtime/contract-runtime.ts",
   "contracts": [
     {
+      "id": "C-5",
+      "criterion": "C-5 cppOpenFragment(candidate): C++ の注入は設定済みの間引き率をランタイムへ渡し、既定値では既存の 3 フィールド形式を保つ",
+      "symbol": "cppOpenFragment",
+      "file": "src/inject/cpp-contract-apply.ts",
+      "module": "contracts/cpp-runtime-sample.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C-4",
       "criterion": "C-4 claudeArgs(model, prefixArgs): Claude の役割名を Lapilli で解決し、明示 ID と起動用の先頭引数を保持する",
       "symbol": "claudeArgs",

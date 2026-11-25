@@ -59,11 +59,11 @@ const PREDICATES = [
   '',
 ].join('\n');
 
-function context(symbol: string, overrides: { importFrom?: string; predicateName?: string | undefined } = {}): InjectContext {
+function context(symbol: string, overrides: { importFrom?: string; predicateName?: string | undefined; sample?: number } = {}): InjectContext {
   const contracts = parseContractsManifest({
     version: 1,
     importFrom: overrides.importFrom ?? RUNTIME,
-    contracts: [{ id: 'C-1', criterion: `C-1 ${symbol}`, symbol, file: FILE, module: HEADER }],
+    contracts: [{ id: 'C-1', criterion: `C-1 ${symbol}`, symbol, file: FILE, module: HEADER, sample: overrides.sample }],
   });
   const name = 'predicateName' in overrides ? overrides.predicateName : 'contracts::area_checks';
   return { contractTargets: buildContractTargets(contracts, () => 'ok', undefined, () => name) };
@@ -132,6 +132,12 @@ describe('contracts lint on C++', () => {
 });
 
 describe('contract-wrap apply / check / remove on C++', () => {
+  it('passes an explicit sampling rate to the C++ runtime and removes the wrap cleanly', () => {
+    const applied = computeApply(FILE, SOURCE, manifest, ['contract-wrap'], context('area', { sample: 0.25 })).text;
+    expect(applied).toMatch(/::augur::ContractSpec\{"C-1", "[0-9a-f]{8}", "src\/geo\/shape\.cpp:6", 0\.25\}/);
+    expect(computeRemove(FILE, applied, ['contract-wrap']).text).toBe(SOURCE);
+  });
+
   it('wraps the body in place with inserts only and adds the includes after the last directive', () => {
     const applied = computeApply(FILE, SOURCE, manifest, ['contract-wrap'], context('area')).text;
     const lines = applied.split('\n');

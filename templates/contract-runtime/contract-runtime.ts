@@ -33,6 +33,7 @@ export interface ContractSpec<A extends unknown[], R> {
   contractId: string;
   id: string;
   where: string;
+  sample?: number;
 }
 
 const ACTIVE_FILE = "contracts.jsonl";
@@ -151,7 +152,8 @@ export function contract<A extends unknown[], R>(
   fn: (...args: A) => R,
   spec: ContractSpec<A, R>,
 ): (...args: A) => R {
-  const { pre, post, contractId, id, where } = spec;
+  const { pre, post, contractId, id, where, sample } = spec;
+  const rate = typeof sample === "number" && sample > 0 && sample < 1 ? sample : 1;
   return function contracted(this: unknown, ...args: A): R {
     const context = { contract: contractId, id, where, observed_at: new Date().toISOString() };
     let preReason: string | null = null;
@@ -166,7 +168,9 @@ export function contract<A extends unknown[], R>(
       try {
         const postReason = failure(post?.(result, ...args));
         if (postReason) record("contract violated", { ...context, phase: "post", reason: postReason });
-        else if (!preReason) record("contract observed", { ...context, phase: "ok" });
+        else if (!preReason && (rate === 1 || Math.random() < rate)) {
+          record("contract observed", { ...context, phase: "ok" });
+        }
       } catch {
         record("contract predicate threw", { ...context, phase: "post", reason: "post predicate threw" });
       }

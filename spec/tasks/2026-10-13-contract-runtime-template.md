@@ -16,13 +16,24 @@ Each repository carried its own hand-written `contract()` runtime (Actio `src/co
 - Arguments and results are never recorded.
 - Destination: `VESTIGIUM_LOGS_DIR`, else `<cwd>/logs`, file `contracts.jsonl` — the same resolution `augur contracts report` uses.
 
+### Sampling successful observations
+
+Actio: `actio:7b2f821b-0495-48fe-915b-5a11491a53ae`.
+
+- TS, ESM and C++ evaluate predicates on every call. Only `contract observed` (`phase: ok`) is sampled. `contract violated` and `contract predicate threw` are always recorded.
+- For `0 < sample < 1`, an `ok` record is kept when a draw from `[0, 1)` is less than `sample`. The runtime treats an omitted rate or a rate outside `0 < sample <= 1` as `1` and records every `ok` without drawing.
+- Tests replace `Math.random` in TS and ESM, or set `augur::testing::random_override()` in the C++ driver.
+- Injected wrappers carry the rate from `augur.contracts.json`. When a rate changes, regenerate the existing wrapper and sync the runtime copy so both use the new behavior.
+
+`C-5 cppOpenFragment(candidate): C++ の注入は設定済みの間引き率をランタイムへ渡し、既定値では既存の 3 フィールド形式を保つ`
+
 ## C++ flavor (`contract-runtime.hpp`)
 
 Actio: 2db40424-fe82-44f8-9449-39c59db7c400. Human instruction (2026-11-06): 「契約については Augur に TS と同じ実装の C++ 用の契約実装を新たに作成」.
 
 `templates/contract-runtime/contract-runtime.hpp` is a header-only C++17 twin of the TypeScript template: the same verdict rules, the same JSONL record (`{"time","msg","ctx":{contract,id,where,observed_at,phase,reason?}}` in that key order), the same destination, JST rotation, archive naming, multi-process claim/link protocol and retention variable. `augur contracts report` therefore reads C++ observations exactly like TypeScript ones.
 
-- API: `augur::contract(fn, augur::ContractSpec{contractId, id, where}, pre, post)` returns a callable with `fn`'s signature. Omitted predicates are `augur::NoPredicate{}`.
+- API: `augur::contract(fn, augur::ContractSpec{contractId, id, where, sample}, pre, post)` returns a callable with `fn`'s signature. The trailing `sample` defaults to `1`. Omitted predicates are `augur::NoPredicate{}`.
 - Verdicts: `augur::Verdict` (`pass()` / `fail(reason)`), `bool` (`false` = `predicate failed`), or a string (the reason; an empty string is no violation, matching JavaScript truthiness).
 - `pre(args...)`; `post(result, args...)`, or `post(args...)` for a void function. Arguments reach `fn` as lvalues so `post` reads the values `pre` saw.
 - Exceptions from `fn` propagate and record nothing (TypeScript records nothing for a synchronous throw either); predicate exceptions are recorded as `contract predicate threw`; every filesystem failure is swallowed.

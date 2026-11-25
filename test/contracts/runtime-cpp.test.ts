@@ -77,6 +77,24 @@ describe('contract runtime template (contract-runtime.hpp)', () => {
     expect(JSON.stringify(events)).not.toContain('"2"');
   });
 
+  it('samples successful observations but always records predicate failures', (context) => {
+    if (!compiled()) return context.skip();
+    const dir = logsDir();
+    drive(dir, '2026-10-14T03:00:00.000Z', 'sampling');
+    expect(linesOf(join(dir, 'contracts.jsonl')).map(({ msg, ctx }) => [msg, ctx.phase])).toEqual([
+      ['contract violated', 'pre'], ['contract violated', 'post'],
+      ['contract predicate threw', 'pre'], ['contract predicate threw', 'post'],
+      ['contract observed', 'ok'],
+    ]);
+  });
+
+  it('records all successful observations for the default, 1 and invalid sample rates', (context) => {
+    if (!compiled()) return context.skip();
+    const dir = logsDir();
+    drive(dir, '2026-10-14T03:00:00.000Z', 'full-sampling');
+    expect(linesOf(join(dir, 'contracts.jsonl')).map(({ ctx }) => ctx.phase)).toEqual(Array<string>(7).fill('ok'));
+  });
+
   it('escapes context strings as JSON', (context) => {
     if (!compiled()) return context.skip();
     const dir = logsDir();

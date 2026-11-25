@@ -8,7 +8,9 @@
 #include "../../../templates/contract-runtime/contract-runtime.hpp"
 
 #include <cstdlib>
+#include <initializer_list>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -46,6 +48,42 @@ int ok() {
   return 0;
 }
 
+int sampling() {
+  auto spec = kSpec;
+  spec.sample = 0.5;
+  augur::testing::random_override().store(0.5);
+  const auto two = [] {
+    return 2;
+  };
+  if (augur::contract(two, spec)() != 2) return 1;
+  const auto fails = [](auto...) {
+    return false;
+  };
+  augur::contract(two, spec, fails, fails)();
+  const auto throws = [](auto...) -> bool {
+    throw std::runtime_error("predicate");
+  };
+  augur::contract(two, spec, throws, throws)();
+  augur::testing::random_override().store(0.49);
+  augur::contract([] {}, spec)();
+  return 0;
+}
+
+int full_sampling() {
+  augur::testing::random_override().store(0.99);
+  const auto one = [] {
+    return 1;
+  };
+  augur::contract(one, kSpec)();
+  auto spec = kSpec;
+  for (const double sample : {1.0, 0.0, -0.1, 1.1, std::numeric_limits<double>::quiet_NaN(),
+                              std::numeric_limits<double>::infinity()}) {
+    spec.sample = sample;
+    augur::contract(one, spec)();
+  }
+  return 0;
+}
+
 int escaped() {
   const augur::ContractSpec spec{"C-\"2\"", "line\nbreak", "C:\\src\\a.cpp:3"};
   augur::contract([]() { return 1; }, spec)();
@@ -60,6 +98,8 @@ int main(int argc, char** argv) {
   const std::string scenario = argv[2];
   if (scenario == "verdicts") return verdicts();
   if (scenario == "ok") return ok();
+  if (scenario == "sampling") return sampling();
+  if (scenario == "full-sampling") return full_sampling();
   if (scenario == "escaped") return escaped();
   return 65;
 }

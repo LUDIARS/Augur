@@ -11,7 +11,7 @@ import augurContract_9429689d from '../../contracts/runtime-template.contract.ts
 import augurContract_3b738b4c from '../../contracts/runtime-render.contract.ts'; /* augur-inject:contract-predicate:eedcda04 */
 
 /** Bumped when the template's observable rules change (rotation, record shape). */
-export const CONTRACT_RUNTIME_TEMPLATE_VERSION = 2;
+export const CONTRACT_RUNTIME_TEMPLATE_VERSION = 3;
 
 export type RuntimeFlavor = 'ts' | 'mjs' | 'hpp';
 

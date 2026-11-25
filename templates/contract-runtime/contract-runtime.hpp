@@ -44,6 +44,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <random>
 #include <regex>
 #include <string>
 #include <system_error>
@@ -69,6 +70,7 @@ struct ContractSpec {
   std::string contractId;
   std::string id;
   std::string where;
+  double sample = 1.0;
 };
 
 /** Placeholder for an absent pre/post predicate. */
@@ -78,6 +80,12 @@ namespace testing {
 /** Test-only clock override in epoch milliseconds; a negative value restores the real clock. */
 inline std::atomic<std::int64_t>& now_override() {
   static std::atomic<std::int64_t> value{-1};
+  return value;
+}
+
+/** Test-only draw in [0, 1); a negative value restores the random source. */
+inline std::atomic<double>& random_override() {
+  static std::atomic<double> value{-1.0};
   return value;
 }
 }  // namespace testing
@@ -365,6 +373,20 @@ inline std::optional<std::string> failure(const char* verdict) {
 /** A reason counts as a violation only when non-empty (JavaScript truthiness). */
 inline bool violated(const std::optional<std::string>& reason) { return reason.has_value() && !reason->empty(); }
 
+/** Applies sampling only to successful observations. Invalid rates record every call. */
+inline bool sampled_in(double sample) {
+  if (!(sample > 0.0 && sample < 1.0)) return true;
+  const double override = testing::random_override().load(std::memory_order_relaxed);
+  if (override >= 0.0) return override < sample;
+  try {
+    thread_local std::mt19937 generator{std::random_device{}()};
+    return std::uniform_real_distribution<double>{0.0, 1.0}(generator) < sample;
+  } catch (...) {
+    // If seeding fails, keep the observation without affecting the wrapped call.
+    return true;
+  }
+}
+
 inline Context with(Context context, const char* phase, const std::string* reason = nullptr) {
   context.emplace_back("phase", phase);
   if (reason != nullptr) context.emplace_back("reason", *reason);
@@ -387,13 +409,13 @@ std::optional<std::string> check_pre(const Pre& pre, const Context& context, Arg
 }
 
 template <class Post, class Call>
-void observe(const Context& context, const std::optional<std::string>& pre_reason, Call&& call_post) {
+void observe(const Context& context, const std::optional<std::string>& pre_reason, double sample, Call&& call_post) {
   try {
     std::optional<std::string> post_reason;
     if constexpr (!std::is_same_v<Post, NoPredicate>) post_reason = failure(call_post());
     if (violated(post_reason)) {
       record("contract violated", with(context, "post", &*post_reason));
-    } else if (!violated(pre_reason)) {
+    } else if (!violated(pre_reason) && sampled_in(sample)) {
       record("contract observed", with(context, "ok"));
     }
   } catch (...) {
@@ -426,13 +448,13 @@ auto contract(Fn fn, ContractSpec spec, Pre pre = {}, Post post = {}) {
     using Result = decltype(fn(args...));
     if constexpr (std::is_void_v<Result>) {
       fn(args...);
-      detail::observe<Post>(context, pre_reason, [&]() -> decltype(auto) {
+      detail::observe<Post>(context, pre_reason, spec.sample, [&]() -> decltype(auto) {
         if constexpr (std::is_same_v<Post, NoPredicate>) return Verdict{};
         else return post(args...);
       });
     } else {
       Result result = fn(args...);
-      detail::observe<Post>(context, pre_reason, [&]() -> decltype(auto) {
+      detail::observe<Post>(context, pre_reason, spec.sample, [&]() -> decltype(auto) {
         if constexpr (std::is_same_v<Post, NoPredicate>) return Verdict{};
         else return post(static_cast<const std::remove_reference_t<Result>&>(result), args...);
       });

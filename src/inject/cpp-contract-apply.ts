@@ -15,6 +15,8 @@ import { posix } from 'node:path';
 import { marker, pointId } from './markers.ts';
 import { CONTRACT_IMPORT_RULE, CONTRACT_RULE } from './contract-scan.ts';
 import type { Candidate, TextEdit } from './types.ts';
+import { contract } from '../../templates/contract-runtime/contract-runtime.ts'; /* augur-inject:import:faa3583a */
+import augurContract_6cd66574 from '../../contracts/cpp-runtime-sample.contract.ts'; /* augur-inject:contract-predicate:6df01489 */
 
 /** Closing half of a wrap; bookkeeping only (it belongs to the opening marker's point). */
 export const CONTRACT_END_RULE = 'contract-end';
@@ -30,9 +32,12 @@ export function cppOpenFragment(candidate: Candidate): string {
   const binding = candidate.contract;
   const site = candidate.cpp;
   if (binding === undefined || site === undefined) throw new Error(`C++ contract-wrap candidate ${candidate.id} has no site`);
-  const spec = `::augur::ContractSpec{${cppString(binding.contractId)}, ${cppString(candidate.id)}, ${cppString(`${candidate.file}:${candidate.line}`)}}`;
+  const sample = binding.sample === 1 ? '' : `, ${binding.sample}`;
+  const spec = `::augur::ContractSpec{${cppString(binding.contractId)}, ${cppString(candidate.id)}, ${cppString(`${candidate.file}:${candidate.line}`)}${sample}}`;
   return ` return ::augur::invoke_observed(${spec}, ${binding.local}, [&]() -> ${site.returnType} { ${marker(CONTRACT_RULE, candidate.id)}`;
 }
+// @ts-expect-error augur-inject
+cppOpenFragment = contract(cppOpenFragment, { ...augurContract_6cd66574, contractId: 'C-5', mode: 'observe', sample: 1, where: 'src/inject/cpp-contract-apply.ts:29', rule: 'contract-wrap', id: '6cd66574' }); /* augur-inject:contract-wrap:6cd66574 */
 
 /** The closing fragment, inserted before the body's `}`. */
 export function cppCloseFragment(candidate: Candidate): string {
