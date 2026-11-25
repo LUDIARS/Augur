@@ -91,19 +91,21 @@ constexpr std::int64_t kDefaultRetentionDays = 7;
 constexpr std::int64_t kDayOffsetMs = 9LL * 60 * 60 * 1000;
 constexpr std::int64_t kDayMs = 24LL * 60 * 60 * 1000;
 
-/** An environment variable, or nullopt when unset (MSVC deprecates getenv). */
+/**
+ * An environment variable, or nullopt when unset. The value is copied at once, so no
+ * memory is managed by hand (the _dupenv_s + free pair was flagged by the C++ code
+ * checks). MSVC only deprecates getenv (C4996); the read is copied before returning.
+ */
 inline std::optional<std::string> env(const char* name) {
 #if defined(_MSC_VER)
-  char* value = nullptr;
-  std::size_t length = 0;
-  if (_dupenv_s(&value, &length, name) != 0 || value == nullptr) return std::nullopt;
-  std::string copy(value);
-  std::free(value);
-  return copy;
-#else
-  const char* value = std::getenv(name);
-  return value == nullptr ? std::nullopt : std::optional<std::string>{value};
+#pragma warning(push)
+#pragma warning(disable : 4996)
 #endif
+  const char* value = std::getenv(name);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+  return value == nullptr ? std::nullopt : std::optional<std::string>{value};
 }
 
 inline std::int64_t now_ms() {
